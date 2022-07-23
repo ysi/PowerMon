@@ -2,12 +2,8 @@
 
 import yaml
 import sys
+from lib import color
 
-class style:
-    RED = '\33[31m'
-    ORANGE = '\33[33m'
-    GREEN = '\33[32m'
-    NORMAL = '\033[0m'
 
 def readYML(YAML_CFG_FILE):
     """
@@ -27,8 +23,8 @@ def readYML(YAML_CFG_FILE):
             YAML_DICT = yaml.load(ymlfile, Loader=yaml.FullLoader)
             return YAML_DICT
     except Exception as e:
-        print(style.RED + YAML_CFG_FILE + " not found in directory" + style.NORMAL)
-        print(style.ORANGE + e + style.NORMAL)
+        print(color.style.RED + YAML_CFG_FILE + " not found in directory" + color.style.NORMAL)
+        print(color.style.ORANGE + e + color.style.NORMAL)
         sys.exit(1)
 
 

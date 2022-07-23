@@ -16,15 +16,8 @@
 # 0.1: Version initiale
 
 import pprint
-from lib import edgeconnection
-from lib import managerconnection
-from lib import tools
+from lib import tools, color, edgeconnection, managerconnection
 
-class style:
-    RED = '\33[31m'
-    ORANGE = '\33[33m'
-    GREEN = '\33[32m'
-    NORMAL = '\033[0m'
 
 
 print("Welcome to PowerMon")
@@ -32,6 +25,7 @@ try:
     # Get IPs Edge and collect NSX Manager Data through API
     # read config file
     config = tools.readYML('./config/config.yml')
+    # Connect to NSX and Get Transport Nodes
     session = managerconnection.ConnectNSX([config['Manager']['login'], config['Manager']['password'], 'AUTH'])
     auth_list = [config['Manager']['login'], config['Manager']['password'], 'AUTH']
     tn_json = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),'/api/v1/transport-nodes', auth_list)
@@ -61,6 +55,6 @@ try:
 
     
 except Exception as e:
-    print(style.RED + e + style.NORMAL)
+    print(color.style.RED + e + color.style.NORMAL)
 
-print(style.GREEN + "Collect terminated" + style.NORMAL)
+print(color.style.GREEN + "Collect terminated" + color.style.NORMAL)

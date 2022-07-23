@@ -3,14 +3,9 @@
 import pprint, requests, urllib3
 from lib import sshcommand
 from lib import tools
+from lib import color
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-
-class style:
-    RED = '\33[31m'
-    ORANGE = '\33[33m'
-    GREEN = '\33[32m'
-    NORMAL = '\033[0m'
 
 def ConnectNSX(auth_list):
     """
@@ -57,8 +52,8 @@ def GetAPI(session,fqdn, url, auth_list):
         for recursive purpose for pagination
     """
 
-    print(style.NORMAL + "API call to " + style.GREEN + fqdn + style.NORMAL)
-    print(style.NORMAL + "Call: " + style.GREEN + url + style.NORMAL)
+    print(color.style.NORMAL + "API call to " + color.style.GREEN + fqdn + color.style.NORMAL)
+    print(color.style.NORMAL + "Call: " + color.style.GREEN + url + color.style.NORMAL)
 
     if auth_list[2] == 'AUTH':
         result =  session.get('https://' + fqdn + url, auth=(auth_list[0], auth_list[1]), verify=session.verify)
@@ -74,55 +69,3 @@ def GetAPI(session,fqdn, url, auth_list):
     
     else: 
         return result.status_code
-
-
-# def getEdgeIPs():
-#     """
-#     getEdgeIPs()
-#     Get IPs of all Edge Nodes in NSX
-#     Returns
-#     ----------
-#     List of IPs
-#     """
-#     Edges = []
-#     # read config file
-#     config = tools.readYML('./config/config.yml')
-
-#     # Connect to Manager
-#     sshconnect = sshcommand.connect(config['Manager']['fqdn'],config['Manager']['port'],config['Manager']['login'],config['Manager']['password'])
-#     # Get list of Nodes
-#     result = sshcommand.exec(sshconnect, 'get nodes', 'nsx')
-#     for item in result:
-#         # Take only nodes of type edge
-#         if item['node_type_label'] == 'edg':
-#             # Grab IP of each edge
-#             edge_list = sshcommand.exec(sshconnect, 'get transport-node ' + item['uuid'] + ' status' , 'nsx')
-#             for edg in edge_list:
-#                 Edges.append(edg['Remote-Address'].split(':')[0])
-                
-#     return Edges
-
-
-
-# def getAllInfos():
-#     """
-#     getAllInfos()
-#     Get all informations based on list a commands in yaml config files
-#     Returns
-#     ----------
-#     List of results
-#     """
-#     TotalResult = []
-
-#     # read config file
-#     config = tools.readYML('./config/config.yml')
-
-#     # Connect to Manager
-#     sshconnect = sshcommand.connect(config['Manager']['fqdn'],config['Manager']['port'],config['Manager']['login'],config['Manager']['password'])
-#     # Loop in all commands
-#     for item in config['Manager']['commands']:
-#         result = sshcommand.exec(sshconnect, item, 'nsx')
-#         TotalResult.append(result)
-    
-#     sshcommand.disconnect(sshconnect)
-#     return TotalResult   

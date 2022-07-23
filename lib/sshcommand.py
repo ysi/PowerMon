@@ -2,19 +2,14 @@
 
 import paramiko
 import json
-
-class style:
-    RED = '\33[31m'
-    ORANGE = '\33[33m'
-    GREEN = '\33[32m'
-    NORMAL = '\033[0m'
+from lib import color
 
 
 def connect(Equipment, Port, Login, Password):
     # SSH connection with paramiko
     # Need IP/FQDN of equipment, TCP Port (can be empty), Login and Password 
     try:
-        print(style.NORMAL + "Connection to " + style.GREEN + Equipment + ":" + str(Port) + style.NORMAL)
+        print(color.style.NORMAL + "Connection to " + color.style.GREEN + Equipment + ":" + str(Port) + color.style.NORMAL)
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         if Port != '':
@@ -23,7 +18,7 @@ def connect(Equipment, Port, Login, Password):
             ssh_client.connect(hostname=Equipment, username=Login,password=Password)
         return ssh_client
     except:
-        print(style.RED + "error" + style.NORMAL)
+        print(color.style.RED + "error" + color.style.NORMAL)
 
 def disconnect(sshclient):
     sshclient.close
@@ -33,7 +28,7 @@ def exec(sshclient, command, type):
         command = command + ' | json'
 
     try:
-        print(style.NORMAL + "Send command: " + style.GREEN + command + style.NORMAL)
+        print(color.style.NORMAL + "Send command: " + color.style.GREEN + command + color.style.NORMAL)
         stdin,stdout,stderr=sshclient.exec_command(command)
         if type == 'nsx':
             return json.loads(stdout.read().decode())
