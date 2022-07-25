@@ -20,6 +20,9 @@
 #               'get interface eth0']
 
 # Lab Stephen
+NSXcollector:
+  schedule: 1 # in minutes 
+
 Manager:
   fqdn: '10.168.165.188'
   port: '' 
