@@ -84,7 +84,7 @@ def main():
     print("Welcome to PowerMon")
     # read config file
     config = tools.readYML('./config/config.yml')
-    countdown(config['NSXcollector']['schedule'] * 60)
+    countdown(config['NSXcollector']['schedule'])
 
 
 if __name__ == "__main__":

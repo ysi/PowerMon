@@ -21,7 +21,7 @@
 
 # Lab Stephen
 NSXcollector:
-  schedule: 1 # in minutes 
+  schedule: 60 # in seconds 
 
 Manager:
   fqdn: '10.168.165.188'
