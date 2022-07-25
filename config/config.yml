@@ -12,4 +12,8 @@ Manager:
 Edge:
   login: 'admin'
   password: 'VMware123!VMware123!'
-  commands: ["get cpu-stats", "get memory-stats", "get ntp-server associations", "get name-servers", "get interface eth0"]
+  commands: [ 'get cpu-stats', 
+              'get memory-stats', 
+              'get ntp-server associations', 
+              'get name-servers', 
+              'get interface eth0']

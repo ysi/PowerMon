@@ -43,18 +43,21 @@ try:
         result = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),api, auth_list)
         NSXManager_Datas.append(result)
 
-    # Get All informations for Edge
+    # Get All informations for Edge by using IP addresses of Edge take previously
     Edge_Datas = []
     for edg in List_Edge_IPs:
-        edge = edgeconnection.getAllInfos('localhost', 23022)
+        # for my own lab
+        # edge = edgeconnection.getAllInfos('localhost', 23022)
+
+        # Get data for an edge
+        edge = edgeconnection.getAllInfos(edg, '')
+
         Edge_Datas.append(edge)
     
     pprint.pprint(NSXManager_Datas)
     pprint.pprint(Edge_Datas)
 
-
-    
-except Exception as e:
-    print(color.style.RED + e + color.style.NORMAL)
+except Exception as error:
+    print(color.style.RED + error + color.style.NORMAL)
 
 print(color.style.GREEN + "Collect terminated" + color.style.NORMAL)
