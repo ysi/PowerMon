@@ -15,7 +15,6 @@
 #
 # 0.1: Version initiale
 
-from code import interact
 import pprint, schedule, time
 from lib import tools, color, edgeconnection, managerconnection
 
@@ -57,7 +56,7 @@ def collect():
         # Get All informations for NSX Manager
         NSXManager_Datas = []
         for api in config['Manager']['api']:
-            result = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),api, auth_list)
+            result = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),api['url'], auth_list)
             NSXManager_Datas.append(result)
 
         # Get All informations for Edge by using IP addresses of Edge take previously

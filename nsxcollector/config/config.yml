@@ -28,17 +28,50 @@ Manager:
   port: '' 
   login: 'admin'
   password: 'Admin!23Admin'
-  api: ['/api/v1/ui-controller/system-aggregate-status',
-        '/api/v1/ui-controller/inventory-aggregate-status',
-        '/api/v1/ui-controller/security-aggregate-status',
-        '/api/v1/ui-controller/networking-aggregate-status',
-        '/api/v1/ui-controller/fabric-aggregate-status']
+  api:
+    -
+      url: '/api/v1/ui-controller/system-aggregate-status'
+      interval: 10
+    -
+      url: '/api/v1/ui-controller/inventory-aggregate-status'
+      interval: 10
+    -
+      url: '/api/v1/ui-controller/security-aggregate-status'
+      interval: 10
+    -
+      url: '/api/v1/ui-controller/networking-aggregate-status'
+      interval: 10
+    -
+      url: '/api/v1/ui-controller/fabric-aggregate-status'
+      interval: 10
+
+  # api: ['/api/v1/ui-controller/system-aggregate-status',
+  #       '/api/v1/ui-controller/inventory-aggregate-status',
+  #       '/api/v1/ui-controller/security-aggregate-status',
+  #       '/api/v1/ui-controller/networking-aggregate-status',
+  #       '/api/v1/ui-controller/fabric-aggregate-status']
     
 Edge:
   login: 'admin'
   password: 'Admin!23Admin'
-  commands: [ 'get cpu-stats', 
-              'get memory-stats', 
-              'get ntp-server associations', 
-              'get name-servers', 
-              'get interface eth0']
+  # commands: [ 'get cpu-stats', 
+  #             'get memory-stats', 
+  #             'get ntp-server associations', 
+  #             'get name-servers', 
+  #             'get interface eth0']
+  commands:
+    -
+      command: 'get cpu-stats'
+      interval: 10
+    -
+      command: 'get memory-stats'
+      interval: 10
+    -
+      command: 'get ntp-server associations'
+      interval: 10
+    -
+      command: 'get name-servers'
+      interval: 10
+    -
+      command: 'get interface eth0s'
+      interval: 10

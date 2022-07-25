@@ -1,8 +1,6 @@
 #!/opt/homebrew/bin/python3
 
-import pprint, requests, urllib3
-from lib import sshcommand
-from lib import tools
+import requests, urllib3
 from lib import color
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 

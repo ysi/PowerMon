@@ -1,7 +1,6 @@
 #!/opt/homebrew/bin/python3
 
-import yaml
-import sys
+import yaml, sys
 from lib import color
 
 
@@ -26,5 +25,3 @@ def readYML(YAML_CFG_FILE):
         print(color.style.RED + YAML_CFG_FILE + " not found in directory" + color.style.NORMAL)
         print(color.style.ORANGE + e + color.style.NORMAL)
         sys.exit(1)
-
-

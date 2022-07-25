@@ -1,8 +1,6 @@
 #!/opt/homebrew/bin/python3
 
-from lib import sshcommand
-from lib import tools
-import pprint
+from lib import sshcommand, tools
 
 
 def getAllInfos(fqdn, port):
@@ -15,7 +13,7 @@ def getAllInfos(fqdn, port):
     sshconnect = sshcommand.connect(fqdn,port,config['Edge']['login'],config['Edge']['password'])
     # Loop in all commands
     for item in config['Edge']['commands']:
-        result = sshcommand.exec(sshconnect, item, 'nsx')
+        result = sshcommand.exec(sshconnect, item['command'], 'nsx')
         TotalResult.append(result)
     
     sshcommand.disconnect(sshconnect)
