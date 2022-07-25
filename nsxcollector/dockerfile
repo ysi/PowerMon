@@ -1,0 +1,6 @@
+FROM python:latest
+RUN mkdir /nsxcollector
+WORKDIR /nsxcollector
+COPY ./requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .

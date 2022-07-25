@@ -1,0 +1,5 @@
+pprint36==3.9.0.2
+requests==2.27.1
+urllib3==1.26.10
+paramiko==2.11.0
+PyYAML==6.0
