@@ -20,58 +20,54 @@
 #               'get interface eth0']
 
 # Lab Stephen
-NSXcollector:
-  schedule: 60 # in seconds 
-
 Manager:
   fqdn: '10.168.165.188'
   port: '' 
   login: 'admin'
   password: 'Admin!23Admin'
-  api:
-    -
-      url: '/api/v1/ui-controller/system-aggregate-status'
-      interval: 10
-    -
-      url: '/api/v1/ui-controller/inventory-aggregate-status'
-      interval: 10
-    -
-      url: '/api/v1/ui-controller/security-aggregate-status'
-      interval: 10
-    -
-      url: '/api/v1/ui-controller/networking-aggregate-status'
-      interval: 10
-    -
-      url: '/api/v1/ui-controller/fabric-aggregate-status'
-      interval: 10
 
-  # api: ['/api/v1/ui-controller/system-aggregate-status',
-  #       '/api/v1/ui-controller/inventory-aggregate-status',
-  #       '/api/v1/ui-controller/security-aggregate-status',
-  #       '/api/v1/ui-controller/networking-aggregate-status',
-  #       '/api/v1/ui-controller/fabric-aggregate-status']
-    
 Edge:
   login: 'admin'
   password: 'Admin!23Admin'
-  # commands: [ 'get cpu-stats', 
-  #             'get memory-stats', 
-  #             'get ntp-server associations', 
-  #             'get name-servers', 
-  #             'get interface eth0']
-  commands:
-    -
-      command: 'get cpu-stats'
-      interval: 10
-    -
-      command: 'get memory-stats'
-      interval: 10
-    -
-      command: 'get ntp-server associations'
-      interval: 10
-    -
-      command: 'get name-servers'
-      interval: 10
-    -
-      command: 'get interface eth0s'
-      interval: 10
+
+
+Commands:
+  -
+    interval: 60
+    cmd: 
+      -
+        type: 'API'
+        name: '/api/v1/ui-controller/system-aggregate-status'
+      -
+        type: 'API'
+        name: '/api/v1/ui-controller/inventory-aggregate-status'
+      -
+        type: 'API'
+        name: '/api/v1/ui-controller/security-aggregate-status'
+      - 
+        type: 'SSH'
+        name: 'get name-servers'
+      -
+        type: 'SSH'
+        name: 'get interface eth0'
+
+  -
+    interval: 10
+    cmd:
+      -
+        type: 'API'
+        name: '/api/v1/ui-controller/networking-aggregate-status'
+      -
+        type: 'API'
+        name: '/api/v1/ui-controller/fabric-aggregate-status'
+      -
+        type: 'SSH'
+        name: 'get cpu-stats'
+      - 
+        type: 'SSH'
+        name: 'get memory-stats'
+      -
+        type: 'SSH'
+        name: 'get ntp-server associations'
+
+

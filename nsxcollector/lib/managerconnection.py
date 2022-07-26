@@ -50,8 +50,8 @@ def GetAPI(session,fqdn, url, auth_list):
         for recursive purpose for pagination
     """
 
-    print(color.style.NORMAL + "API call to " + color.style.GREEN + fqdn + color.style.NORMAL)
-    print(color.style.NORMAL + "Call: " + color.style.GREEN + url + color.style.NORMAL)
+    # print(color.style.NORMAL + "API call to " + color.style.GREEN + fqdn + color.style.NORMAL)
+    # print(color.style.NORMAL + "Call: " + color.style.GREEN + url + color.style.NORMAL)
 
     if auth_list[2] == 'AUTH':
         result =  session.get('https://' + fqdn + url, auth=(auth_list[0], auth_list[1]), verify=session.verify)

@@ -5,7 +5,7 @@
 # PowerMon                                        
 # -------------------------------------------------------------------------
 # Utilisation:
-# './NSXCollector.py'
+# './nsxcollector.py'
 #
 # -------------------------------------------------------------------------
 # |  Version History                                                      |
@@ -15,75 +15,111 @@
 #
 # 0.1: Version initiale
 
-import pprint, schedule, time
-from lib import tools, color, edgeconnection, managerconnection
-
-def countdown(t):
-    # Schedule the next collect
-    schedule.every(t).seconds.do(collect)
-    # print the countdown
-    while t:
-        mins, secs = divmod(t, 60)
-        timer = '{:02d}:{:02d}'.format(mins, secs)
-        print(color.style.GREEN + "Waiting Schedule: " + color.style.NORMAL + timer, end="\r")
-        time.sleep(1)
-        t -= 1
-    
-    # Start Collectiong
-    print(color.style.RED + "Start Collect" + color.style.NORMAL)
-    while True:
-        schedule.run_pending()
-        time.sleep(t)
+from concurrent.futures import thread
+import schedule, time, threading, socket, paramiko.ssh_exception, logging
+from lib import tools, color, managerconnection
+from fabric import Connection, ThreadingGroup, exceptions, runners
+from threading import current_thread
 
 
-def collect():
+
+def collectDataNSX(command, intvl, session, edge):
+    # Loop in commands or API calls
+    for cmd in command['cmd']:
+        if cmd['type'] == 'API':
+            # Get API
+            print(current_thread().name + ": On " + color.style.GREEN + config['Manager']['fqdn'] + color.style.NORMAL + " - Call " + color.style.GREEN + cmd['name'] + color.style.NORMAL)
+            result = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),cmd['name'], auth_list)
+            NSXManager_Datas.append(result)
+
+    # Connect in ssh on the group of Edge
+    list_edge =[]
+    edg =  []
+    for host in edge:   
+        edg.append(Connection(host=host, user=config['Edge']['login'], connect_kwargs={'password': config['Edge']['password']}))
+        list_edge.append(host)
+    group = ThreadingGroup.from_connections(edg)
+    try:
+        # Passing commands on the group of Edge
+        for cmd in command['cmd']:
+            if cmd['type'] == 'SSH':
+                print(current_thread().name + ": Sent on " + color.style.GREEN + ', '.join(list_edge) + color.style.NORMAL + " - ssh commands " + color.style.GREEN + cmd['name'] + color.style.NORMAL)
+                output = group.run(cmd['name'] + ' | json', hide=True)
+                for r in output:
+                    connection = output[r]
+                    with open('../tests/result.txt', 'a') as f:
+                        f.write(connection.stdout)
+        group.close()
+    except exceptions.GroupException as e:
+        i = 0
+        for c, r in e.result.items():
+            print("Host[{}] = [{}]".format(i,c.host) )
+            if isinstance(r,runners.Result) :
+                print("ok, fine")
+            elif isinstance(r,socket.gaierror) :
+                print("Network error")
+            elif isinstance(r,paramiko.ssh_exception.AuthenticationException) :
+                print("Auth failed")
+            else:
+                print(e.result.items())
+            i+=1
+
+
+
+def run_threaded(job_func, call, intvl, session, edge):
+    # Create a thread
+    job_thread = threading.Thread(name='Thread-' + str(intvl), target=job_func, args=(call,intvl,session,edge,))
+    job_thread.start()
+
+def createSchedule(List_Edge_IPs, session, config):
+    # Create schedule based on interval on config file
+    # loop on all commands in config file
+    for cd in config['Commands']:
+        # Create a Thread based on interval
+        interval = cd['interval']
+        schedule.every(cd['interval']).seconds.do(run_threaded, collectDataNSX, call=cd, intvl=interval, session=session, edge=List_Edge_IPs)
+
+
+def main():
+    global config
+    global NSXManager_Datas
+    global Edge_Datas
+    global auth_list
+    NSXManager_Datas = []
+    Edge_Datas = []
+
+    print("Welcome to PowerMon")
+    # read config file
+    config = tools.readYML('./config/config.yml')
+
     try:
         # Get IPs Edge and collect NSX Manager Data through API
-        # read config file
-        config = tools.readYML('./config/config.yml')
         # Connect to NSX and Get Transport Nodes
         session = managerconnection.ConnectNSX([config['Manager']['login'], config['Manager']['password'], 'AUTH'])
         auth_list = [config['Manager']['login'], config['Manager']['password'], 'AUTH']
         tn_json = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),'/api/v1/transport-nodes', auth_list)
 
         # List of Edge IPs
+        print(color.style.RED + "==> " + color.style.NORMAL + "Connecting to NSX Manager " + color.style.GREEN + config['Manager']['fqdn'] + color.style.NORMAL + " and Getting Edge IPs")
+
         List_Edge_IPs = []
         if isinstance(tn_json, dict) and 'results' in tn_json and tn_json['result_count'] > 0: 
             for node in tn_json['results']:
                 if node['node_deployment_info']['resource_type'] == 'EdgeNode':
                     List_Edge_IPs.append(node['node_deployment_info']['ip_addresses'][0])
-
-        # Get All informations for NSX Manager
-        NSXManager_Datas = []
-        for api in config['Manager']['api']:
-            result = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),api['url'], auth_list)
-            NSXManager_Datas.append(result)
+        
+        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(List_Edge_IPs)) + " Edges")
+        # Get All informations on NSX Managers, Edge
+        print(color.style.RED + "==> " + color.style.NORMAL + "Collecting all informations")
+        createSchedule(List_Edge_IPs, session, config)
 
         # Get All informations for Edge by using IP addresses of Edge take previously
-        Edge_Datas = []
-        for edg in List_Edge_IPs:
-            # for my own lab
-            # edge = edgeconnection.getAllInfos('localhost', 23022)
-
-            # Get data for an edge
-            edge = edgeconnection.getAllInfos(edg, '')
-
-            Edge_Datas.append(edge)
-        
-        pprint.pprint(NSXManager_Datas)
-        pprint.pprint(Edge_Datas)
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
 
     except Exception as error:
-        print(color.style.RED + error + color.style.NORMAL)
-
-    print(color.style.GREEN + "Collect terminated" + color.style.NORMAL)
-
-
-def main():
-    print("Welcome to PowerMon")
-    # read config file
-    config = tools.readYML('./config/config.yml')
-    countdown(config['NSXcollector']['schedule'])
+        print(color.style.RED + str(error) + color.style.NORMAL)
 
 
 if __name__ == "__main__":
