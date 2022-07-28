@@ -1,0 +1,18 @@
+apiVersion: 1
+
+datasources:
+  - name: $INFLUXDB_DOCKER_CONTAINER_NAME
+    type: influxdb
+    access: proxy
+    database: $INFLUXDB_DB
+    url: http://$INFLUXDB_NAME:$INFLUXDB_PORT
+    secureJsonData:
+      token: $INFLUXDB_TOKEN
+    jsonData:
+      version: Flux
+      organization: $INFLUXDB_ORG
+      defaultBucket: $INFLUXDB_DB
+      tlsSkipVerify: true
+
+    isDefault: true
+    editable: true

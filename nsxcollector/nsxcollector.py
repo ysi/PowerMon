@@ -15,10 +15,10 @@
 #
 # 0.1: Version initiale
 
-from concurrent.futures import thread
-import schedule, time, threading, socket, paramiko.ssh_exception, logging
-from lib import tools, color, managerconnection
-from fabric import Connection, ThreadingGroup, exceptions, runners
+import schedule, time, threading, pprint,json
+from lib import tools, color, managerconnection, influxdb
+from lib.formatDatas import processAPI
+from fabric import Connection, ThreadingGroup
 from threading import current_thread
 
 
@@ -28,9 +28,15 @@ def collectDataNSX(command, intvl, session, edge):
     for cmd in command['cmd']:
         if cmd['type'] == 'API':
             # Get API
-            print(current_thread().name + ": On " + color.style.GREEN + config['Manager']['fqdn'] + color.style.NORMAL + " - Call " + color.style.GREEN + cmd['name'] + color.style.NORMAL)
-            result = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),cmd['name'], auth_list)
-            NSXManager_Datas.append(result)
+            print(current_thread().name + ": On " + color.style.GREEN + config['Manager']['fqdn'] + color.style.NORMAL + " - Call " + color.style.GREEN + cmd['call'] + color.style.NORMAL)
+            result = managerconnection.GetAPI(session[0], config['Manager']['fqdn'] + ":" + str(config['Manager']['port']),cmd['call'], auth_list)
+            if isinstance(result, int):
+                print(current_thread().name + color.style.RED + "ERROR in call + " + cmd['call'] + color.style.NORMAL + " - error " + result)
+            else:
+                # Call format function of a call
+                function_name = globals()[cmd['name']]
+                format_data = function_name(config['Manager']['fqdn'], result)
+                influxdb.influxWrite(write_api[0],write_api[1], write_api[2], format_data )
 
     # Connect in ssh on the group of Edge
     list_edge =[]
@@ -39,31 +45,23 @@ def collectDataNSX(command, intvl, session, edge):
         edg.append(Connection(host=host, user=config['Edge']['login'], connect_kwargs={'password': config['Edge']['password']}))
         list_edge.append(host)
     group = ThreadingGroup.from_connections(edg)
-    try:
-        # Passing commands on the group of Edge
-        for cmd in command['cmd']:
-            if cmd['type'] == 'SSH':
-                print(current_thread().name + ": Sent on " + color.style.GREEN + ', '.join(list_edge) + color.style.NORMAL + " - ssh commands " + color.style.GREEN + cmd['name'] + color.style.NORMAL)
-                output = group.run(cmd['name'] + ' | json', hide=True)
-                for r in output:
-                    connection = output[r]
-                    with open('../tests/result.txt', 'a') as f:
-                        f.write(connection.stdout)
-        group.close()
-    except exceptions.GroupException as e:
-        i = 0
-        for c, r in e.result.items():
-            print("Host[{}] = [{}]".format(i,c.host) )
-            if isinstance(r,runners.Result) :
-                print("ok, fine")
-            elif isinstance(r,socket.gaierror) :
-                print("Network error")
-            elif isinstance(r,paramiko.ssh_exception.AuthenticationException) :
-                print("Auth failed")
-            else:
-                print(e.result.items())
-            i+=1
 
+    # Passing commands on the group of Edge
+    for cmd in command['cmd']:
+        if cmd['type'] == 'SSH':
+            print(current_thread().name + ": Sent on " + color.style.GREEN + ', '.join(list_edge) + color.style.NORMAL + " - ssh commands " + color.style.GREEN + cmd['call'] + color.style.NORMAL)
+            output = group.run(cmd['call'] + ' | json', hide=True)
+            for r in output:
+                connection = output[r]
+                # run function return a string with \n. Need to erase \n from the string and convert it on a real json
+                result = json.loads(connection.stdout.replace('\n', ''))
+                # print(result['summary'][0] + ":" + result['summary'][7].split(':')[1])
+
+                # for i in result['summary']:
+                #     print(i)
+                # with open('../tests/result.txt', 'a') as f:
+                #     f.write(connection.stdout)
+    group.close()
 
 
 def run_threaded(job_func, call, intvl, session, edge):
@@ -82,6 +80,7 @@ def createSchedule(List_Edge_IPs, session, config):
 
 def main():
     global config
+    global write_api
     global NSXManager_Datas
     global Edge_Datas
     global auth_list
@@ -91,6 +90,8 @@ def main():
     print("Welcome to PowerMon")
     # read config file
     config = tools.readYML('./config/config.yml')
+    # Create connection with InfluxDB
+    write_api = influxdb.influxConnection()
 
     try:
         # Get IPs Edge and collect NSX Manager Data through API

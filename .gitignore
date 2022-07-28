@@ -1,3 +1,14 @@
 # macOS Files
 .DS_Store
-grafana/
+
+# cache Python
+__pycache__/
+lib/__pycache__/
+*.py[cod]
+
+# Grafana
+grafana/plugins
+grafana/grafana.db
+
+# Test
+tests/

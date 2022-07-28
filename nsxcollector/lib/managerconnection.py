@@ -52,18 +52,23 @@ def GetAPI(session,fqdn, url, auth_list):
 
     # print(color.style.NORMAL + "API call to " + color.style.GREEN + fqdn + color.style.NORMAL)
     # print(color.style.NORMAL + "Call: " + color.style.GREEN + url + color.style.NORMAL)
+    try:
+        if auth_list[2] == 'AUTH':
+            result =  session.get('https://' + fqdn + url, auth=(auth_list[0], auth_list[1]), verify=session.verify)
 
-    if auth_list[2] == 'AUTH':
-        result =  session.get('https://' + fqdn + url, auth=(auth_list[0], auth_list[1]), verify=session.verify)
+        if auth_list[2] == 'CERT':
+            result =  requests.get('https://' + fqdn + url, headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
 
-    if auth_list[2] == 'CERT':
-        result =  requests.get('https://' + fqdn + url, headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
+        if result.status_code == 200:
+            resultJSON = result.json()
+            if 'result_count' in resultJSON: count = resultJSON['result_count']
 
-    if result.status_code == 200:
-        resultJSON = result.json()
-        if 'result_count' in resultJSON: count = resultJSON['result_count']
+            return resultJSON
 
-        return resultJSON
+        else: 
+            return result.status_code
     
-    else: 
-        return result.status_code
+
+    except requests.exceptions.RequestException as error:
+        print(color.style.RED + "ERROR in API call: " + url + color.style.NORMAL + " : " + str(error))
+        raise SystemExit(error)
