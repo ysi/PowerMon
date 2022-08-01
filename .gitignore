@@ -4,7 +4,7 @@
 # cache Python
 __pycache__/
 lib/__pycache__/
-*.py[cod]
+*.pyc
 
 # Grafana
 grafana/plugins
