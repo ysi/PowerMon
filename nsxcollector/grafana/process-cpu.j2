@@ -1,0 +1,70 @@
+{# be aware, for quote inside a value like on query, you must add \ before each quote #}
+{
+  "type": "{{type}}",
+  "title": "{{name}}",
+  "gridPos": {
+    "h": 6,
+    "w": 13,
+    "x": 0,
+    "y": 0
+  },
+  "transformations": [
+    {
+      "id": "filterFieldsByName",
+      "options": {
+        "include": {
+          "names": {{list_process | tojson}}
+        }
+      }
+    }],
+  "fieldConfig": {
+    "defaults": {
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "#EAB839",
+            "value": 70
+          },
+          {
+            "color": "red",
+            "value": 90
+          }
+        ]
+      },
+      "max": 100
+    },
+    "overrides": []
+  },
+  "options": {
+    "reduceOptions": {
+      "values": false,
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": ""
+    },
+    "orientation": "auto",
+    "showThresholdLabels": false,
+    "showThresholdMarkers": true
+  },
+  "targets": [{%for q in query%}
+   {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "{{datasource_uid}}"
+      },
+      "query": "from(bucket: \"{{datasource_bucket}}\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"Process\")  |> filter(fn: (r) => r[\"_field\"] == \"cpu_usage\")  |> filter(fn: (r) => r[\"host\"] == \"{{q.node_ip}}\")   |> filter(fn: (r) => r[\"process\"] == \"{{q.process}}\")   |> set(key: \"process\", value: \"{{q.label}}\")|> set(key: \"_measurement\", value: \"\") |> set(key: \"_field\", value: \"\") |> set(key: \"host\", value: \"\")  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)  |> yield(name: \"last\")",
+      "refId": "A{{loop.index}}"
+    }{% if not loop.last %},{% endif %}{% endfor %}
+    ],
+  "datasource": {
+    "type": "influxdb",
+    "uid": "{{datasource_uid}}"
+  }
+}

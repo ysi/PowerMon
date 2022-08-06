@@ -7,3 +7,5 @@ schedule==1.1.0
 fabric==2.7.1
 influxdb-client==1.30.0
 python-dotenv==0.20.0
+numpy==1.23.1
+Jinja2==3.0.3
