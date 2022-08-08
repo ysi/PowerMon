@@ -47,7 +47,7 @@ def readYML(YAML_CFG_FILE):
             for key, value in YAML_DICT.items():
                 # Check Thread Section
                 if key == 'Thread':
-                    if value['type'] == '' or value['nb_thread'] == '' or value['interval'] == '':
+                    if value['type'] == '' or value['nb_thread'] == '' or value['polling'] == '':
                         print(color.style.RED + YAML_CFG_FILE + ": error - empty value in section: " + key + color.style.NORMAL)
                         sys.exit(1)
 

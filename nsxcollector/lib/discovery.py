@@ -21,7 +21,7 @@ def discovery(config):
     for key, node in config['Component'].items():
         if node['commands'] is None or len(node['commands']) == 0: break
         for cmdnode in node['commands']:
-            cmd = commands.cmd(cmdnode['name'], cmdnode['type'], node['type'], cmdnode['interval'], cmdnode['call'], cmdnode['panelfunction'], cmdnode['datafunction'])
+            cmd = commands.cmd(cmdnode['name'], cmdnode['type'], node['type'], cmdnode['polling'], cmdnode['call'], cmdnode['panelfunction'], cmdnode['datafunction'])
             
             if cmd not in ListAllCmds:
                 ListAllCmds.append(cmd)
@@ -56,12 +56,12 @@ def discovery(config):
                             List_Cmd = []
                             if len(cd['call']) > 1:
                                 for i in cd['call']:
-                                    if cd['interval'] not in nsx_manager.list_intervall_cmd: nsx_manager.list_intervall_cmd.append(cd['interval'])
-                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['interval'], i, cd['panelfunction'], cd['datafunction']))
+                                    if cd['polling'] not in nsx_manager.list_intervall_cmd: nsx_manager.list_intervall_cmd.append(cd['polling'])
+                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['polling'], i, cd['panelfunction'], cd['datafunction']))
                                 nsx_manager.cmd.append(List_Cmd)
                             else:
-                                if cd['interval'] not in nsx_manager.list_intervall_cmd: nsx_manager.list_intervall_cmd.append(cd['interval'])
-                                nsx_manager.cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['interval'], cd['call'][0], cd['panelfunction'], cd['datafunction']))
+                                if cd['polling'] not in nsx_manager.list_intervall_cmd: nsx_manager.list_intervall_cmd.append(cd['polling'])
+                                nsx_manager.cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['polling'], cd['call'][0], cd['panelfunction'], cd['datafunction']))
 
                 # Add node in object command
                 for cd in ListAllCmds:
@@ -84,13 +84,13 @@ def discovery(config):
                             List_Cmd = []
                             if len(cd['call']) > 1:
                                 for i in cd['call']:
-                                    if cd['interval'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['interval'])
-                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['interval'], i, cd['panelfunction'], cd['datafunction']))
+                                    if cd['polling'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['polling'])
+                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], i, cd['panelfunction'], cd['datafunction']))
 
                                 tn.cmd.append(List_Cmd)
                             else:
-                                if cd['interval'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['interval'])
-                                tn.cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['interval'], cd['call'], cd['panelfunction'], cd['datafunction']))
+                                if cd['polling'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['polling'])
+                                tn.cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], cd['call'], cd['panelfunction'], cd['datafunction']))
 
                 if node['node_deployment_info']['resource_type'] == 'EdgeNode':
                     tn.login = config['Component']['Edge']['login']

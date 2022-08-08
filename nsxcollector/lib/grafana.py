@@ -134,7 +134,6 @@ class grafana:
                     "message": "Created by PowerMon",
                     "overwrite": False
             }
-            logging.debug(body)
             resul, code = connection.GetAPIGeneric(grafanaurl + '/api/dashboards/uid/' + self.uid, grafanalogin, grafanapassword, False)
             if code != 200:
                 connection.PostAPIGeneric(url, grafanalogin, grafanapassword, body, True, 'Grafana', 'Create Dashboard ' + self.name)
@@ -264,7 +263,6 @@ def createGrafanaEnv(config, dictenv, ListTN):
                         if isinstance(cmd, list):
                             # get the first result of the command
                             for cd in cmd:
-                                logging.debug(cd.__dict__)
                                 result = result | connection.sendCommand(tn, cd, config)
 
                             # result = connection.sendCommand(tn, cmd[0], config)

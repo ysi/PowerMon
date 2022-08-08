@@ -8,7 +8,7 @@ Thread:
   # 2 type of thread : Command or Node
   type: Command # Command or Node
   nb_thread: 2
-  interval : 30
+  polling : 30
 
 # Component of NSX Infrastructure
 # Component have 3 types : Manager, EdgeNode, HostNode
@@ -39,14 +39,14 @@ Component:
         call: ['/api/v1/systemhealth/appliances/process/status']
         datafunction: 'Manager_CPU_Process_Data'
         panelfunction: 'Manager_CPU_Process_Panel'
-        interval: 30
+        polling: 30
       -
         name: 'Manager Cluster'
         type: 'API'
         call: ['/api/v1/cluster/status', '/policy/api/v1/cluster/backups/overview']
         datafunction: 'Manager_Cluster_Data'
         panelfunction: 'Manager_Cluster_Panel'
-        interval: 30
+        polling: 30
 
 
   Edge:
@@ -60,14 +60,14 @@ Component:
       #   call: ['get logical-routers', 'get logical-router ID interfaces stats']
       #   datafunction: 'Edge_Int_Data'
       #   panelfunction: 'Edge_Int_Panel'
-      #   interval: 10
+      #   polling: 10
       # -
       #   name: 'Edges CPU'
       #   type: 'SSH'
       #   call: ['get cpu-stats']
       #   datafunction: 'Edge_CPU_Data'
       #   panelfunction: 'Edge_CPU_Panel'
-      #   interval: 10
+      #   polling: 10
 
 
   Host:

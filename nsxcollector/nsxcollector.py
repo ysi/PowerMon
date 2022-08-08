@@ -64,7 +64,7 @@ def createSchedule(thread_config, List):
     # Commands less than thread => only one thread
     if len(List) < thread_config['nb_thread']:
         print(color.style.RED + "-- ==> Found " + color.style.NORMAL + str(len(List)) + " elements - Create only one Thread")
-        schedule.every(thread_config['interval']).seconds.do(run_threaded, collectData, cmd=List, type_thread=thread_config['type'] ,index=1)
+        schedule.every(thread_config['polling']).seconds.do(run_threaded, collectData, cmd=List, type_thread=thread_config['type'] ,index=1)
 
     # Commands equal thread => 1 command per Thread - MAX Thread = 16
     elif len(List) == thread_config['nb_thread'] and len(List) <= 16:   
@@ -72,7 +72,7 @@ def createSchedule(thread_config, List):
         splits = np.array_split(List,thread_config['nb_thread'])
         index = 1
         for array in splits:
-            schedule.every(thread_config['interval']).seconds.do(run_threaded, collectData, cmd=array, type_thread=thread_config['type'], index=index)
+            schedule.every(thread_config['polling']).seconds.do(run_threaded, collectData, cmd=array, type_thread=thread_config['type'], index=index)
             index += 1
 
     # Commands upper thread => create number of thread in config file - MAX Thread = 16
@@ -87,7 +87,7 @@ def createSchedule(thread_config, List):
         splits = np.array_split(List,nb_thread)
         index = 1
         for array in splits:
-            schedule.every(thread_config['interval']).seconds.do(run_threaded, collectData, cmd=array, type_thread=thread_config['type'], index=index)
+            schedule.every(thread_config['polling']).seconds.do(run_threaded, collectData, cmd=array, type_thread=thread_config['type'], index=index)
             index += 1
 
     else:
