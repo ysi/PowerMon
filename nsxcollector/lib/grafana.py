@@ -259,18 +259,27 @@ def createGrafanaEnv(config, dictenv, ListTN):
                 if db == tn.gf_dashboard:
                     # Loop in all commands
                     for cmd in tn.cmd:
+                        result = {}
                         # dual command process
                         if isinstance(cmd, list):
                             # get the first result of the command
-                            result = connection.sendCommand(tn, cmd[0], config)
-                            function_name = globals()[cmd[0].format_function]
-                            list_item = function_name(tn, result, False)
-                            for rtr in list_item:
-                                final_cmd = cmd[1].call.replace('ID', rtr)
-                                cmd[1].updateCall(final_cmd)
-                                result = connection.sendCommand(tn, cmd[1], config)                                            
-                                function_name = globals()[cmd[0].panel_function]
-                                dash = function_name(tn, db, gf, result)
+                            for cd in cmd:
+                                logging.debug(cd.__dict__)
+                                result = result | connection.sendCommand(tn, cd, config)
+
+                            # result = connection.sendCommand(tn, cmd[0], config)
+                            # function_name = globals()[cmd[0].format_function]
+                            # list_item = function_name(tn, result, False)
+                            # for rtr in list_item:
+                            #     final_cmd = cmd[1].call.replace('ID', rtr)
+                            #     cmd[1].updateCall(final_cmd)
+                            #     result = connection.sendCommand(tn, cmd[1], config)                                            
+                            #     function_name = globals()[cmd[0].panel_function]
+                            #     dash = function_name(tn, db, gf, result)
+                            # Call format function of a call
+                            function_name = globals()[cmd[0].panel_function]
+                            dash = function_name(tn, db, gf, result)
+
 
                         # one command process
                         else:

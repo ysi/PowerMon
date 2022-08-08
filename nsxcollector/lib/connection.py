@@ -31,7 +31,7 @@ def getAPIData(cmd, flagwrite, influxapi=()):
         host_url = cmd.tn[0].vip
     # Get Data from a API call
 
-
+    logging.debug(cmd.call)
     for call in cmd.call:
         print(current_thread().name + ": On " + color.style.GREEN + cmd.tn[0].ip_mgmt + color.style.NORMAL + " - Call " + color.style.GREEN + ', '.join(cmd.call) + color.style.NORMAL)
         result, code = GetAPIGeneric('https://' + host_url + call, cmd.tn[0].login, cmd.tn[0].password, False)
@@ -151,7 +151,8 @@ def sendCommand(tn, cd, config):
     Send a command and return the result
     Parameters
     ----------
-    tn (obj): command object
+    tn (obj): host object
+    cd (obj): command object
     config (dict): yaml configuration file
     """
     if cd.type == 'SSH':

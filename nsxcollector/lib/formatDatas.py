@@ -26,21 +26,21 @@ def Manager_Cluster_Data(host, json):
         Tab_result.append(status)
         nodes_up = "MC-Nodes,host="+host+" UP="+ str(len(json["mgmt_cluster_status"]["online_nodes"])) + ",DOWN="+str(len(json["mgmt_cluster_status"]["offline_nodes"]))
         Tab_result.append(nodes_up)
-    # # Value for Backup enabled
-    # if isinstance(json, dict) and 'backup_enabled' in json:
-    #     status = "BKP-Config,host="+host+" enabled="+str(json["backup_enabled"])
-    #     Tab_result.append(status)
-    # # Value for Backup scheduled
-    # if isinstance(json, dict) and 'backup_schedule' in json:
-    #     status = "BKP-Config,host="+host+" schedule=\""+json["backup_schedule"]["resource_type"]+"\""
-    #     Tab_result.append(status)
-    # # Value for Last backup
-    # if isinstance(json, dict) and 'cluster_backup_statuses' in json and len(json["cluster_backup_statuses"])>0:
-    #     status = "BKP-LastStatus,host="+host+" status="+str(json["cluster_backup_statuses"][0]["success"])
-    #     Tab_result.append(status)
-    # else:
-    #     status = "BKP-LastStatus,host="+host+" status=False"
-    #     Tab_result.append(status)
+    # Value for Backup enabled
+    if isinstance(json, dict) and 'backup_enabled' in json:
+        status = "BKP-Config,host="+host+" enabled="+str(json["backup_enabled"])
+        Tab_result.append(status)
+    # Value for Backup scheduled
+    if isinstance(json, dict) and 'backup_schedule' in json:
+        status = "BKP-Config,host="+host+" schedule=\""+json["backup_schedule"]["resource_type"]+"\""
+        Tab_result.append(status)
+    # Value for Last backup
+    if isinstance(json, dict) and 'cluster_backup_statuses' in json and len(json["cluster_backup_statuses"])>0:
+        status = "BKP-LastStatus,host="+host+" status="+str(json["cluster_backup_statuses"][0]["success"])
+        Tab_result.append(status)
+    else:
+        status = "BKP-LastStatus,host="+host+" status=False"
+        Tab_result.append(status)
 
     # Manager Services Treatment
     # Loop
@@ -50,6 +50,7 @@ def Manager_Cluster_Data(host, json):
             status = group['group_type'] + ",host=" + host + " STATE=\""+ group['group_status'] +"\""
             Tab_result.append(status)
 
+    logging.debug(Tab_result)
     return Tab_result
 
 def Edge_Int_Data(host, json, Writing=False):

@@ -43,7 +43,7 @@ Component:
       -
         name: 'Manager Cluster'
         type: 'API'
-        call: ['/api/v1/cluster/status']
+        call: ['/api/v1/cluster/status', '/policy/api/v1/cluster/backups/overview']
         datafunction: 'Manager_Cluster_Data'
         panelfunction: 'Manager_Cluster_Panel'
         interval: 30
