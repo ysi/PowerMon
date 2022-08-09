@@ -3,7 +3,7 @@ from unittest import result
 from lib import connection, color, tools, transportnodes
 from lib.formatDatas import Edge_Int_Panel, Manager_CPU_Process_Panel, Edge_CPU_Panel, Manager_Cluster_Panel, Edge_Int_Data
 from fabric import Connection
-import sys, pprint, logging
+import sys, logging
 
 
 class grafana:
@@ -43,7 +43,7 @@ class grafana:
         grafanapassword = dictenv['GRAFANA_ADMIN_PASSWORD']
 
         url = grafanaurl + '/api/datasources/name/' + dictenv['INFLUXDB_DOCKER_CONTAINER_NAME']
-        response, code = connection.GetAPIGeneric(url, grafanalogin, grafanapassword, False)
+        response, code = connection.GetAPIGeneric(url, grafanalogin, grafanapassword)
         if code != 200:
             print(color.style.RED + "==> ERROR: " + color.style.NORMAL + "Grafana - Datasource " + dictenv['INFLUXDB_DOCKER_CONTAINER_NAME'] + " not found")
             sys.exit()
@@ -77,7 +77,7 @@ class grafana:
             grafanapassword = dictenv['GRAFANA_ADMIN_PASSWORD']
             url = grafanaurl + '/api/folders'
 
-            result, code = connection.GetAPIGeneric(url + '/' + self.uid, grafanalogin, grafanapassword, False)
+            result, code = connection.GetAPIGeneric(url + '/' + self.uid, grafanalogin, grafanapassword)
             if code != 200:
                 connection.PostAPIGeneric(url, grafanalogin, grafanapassword, body, True, 'Grafana', 'Create folder ' + self.name)
             else:
@@ -134,7 +134,7 @@ class grafana:
                     "message": "Created by PowerMon",
                     "overwrite": False
             }
-            resul, code = connection.GetAPIGeneric(grafanaurl + '/api/dashboards/uid/' + self.uid, grafanalogin, grafanapassword, False)
+            resul, code = connection.GetAPIGeneric(grafanaurl + '/api/dashboards/uid/' + self.uid, grafanalogin, grafanapassword)
             if code != 200:
                 connection.PostAPIGeneric(url, grafanalogin, grafanapassword, body, True, 'Grafana', 'Create Dashboard ' + self.name)
             else:

@@ -1,6 +1,6 @@
 #!/opt/homebrew/bin/python3
 from lib import connection, color, transportnodes, commands
-import sys
+import sys, pprint
 
 def discovery(config):
     """
@@ -21,7 +21,11 @@ def discovery(config):
     for key, node in config['Component'].items():
         if node['commands'] is None or len(node['commands']) == 0: break
         for cmdnode in node['commands']:
-            cmd = commands.cmd(cmdnode['name'], cmdnode['type'], node['type'], cmdnode['polling'], cmdnode['call'], cmdnode['panelfunction'], cmdnode['datafunction'])
+            if cmdnode['type'] == 'SSH':
+                timeout = config['General']['ssh_timeout']
+            else:
+                timeout = config['General']['api_timeout']
+            cmd = commands.cmd(cmdnode['name'], cmdnode['type'], node['type'], cmdnode['polling'], cmdnode['call'], timeout, cmdnode['panelfunction'], cmdnode['datafunction'])
             
             if cmd not in ListAllCmds:
                 ListAllCmds.append(cmd)
@@ -35,8 +39,8 @@ def discovery(config):
             url = config['Component']['Manager']['fqdn'] + ":" + str(config['Component']['Manager']['port'])
 
         print(color.style.RED + "==> " + color.style.NORMAL + "Connecting to NSX Manager " + color.style.GREEN + url + color.style.NORMAL + " and Getting Edge IPs")
-        discover_json, code = connection.GetAPIGeneric('https://' + url + discover_url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], False)
-        cluster_json, code = connection.GetAPIGeneric('https://' + url + cluster_url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], False)
+        discover_json, code = connection.GetAPIGeneric('https://' + url + discover_url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'], False)
+        cluster_json, code = connection.GetAPIGeneric('https://' + url + cluster_url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'], False)
         List_Nodes = []
         # NSX Manager Cluster
         if isinstance(cluster_json, dict):
@@ -54,14 +58,21 @@ def discovery(config):
                     if nsx_manager.type == value['type']:
                         for cd in value['commands']:
                             List_Cmd = []
+                            if cd['type'] == 'SSH':
+                                timeout = config['General']['ssh_timeout']
+                            else:
+                                timeout = config['General']['api_timeout']
+
+
                             if len(cd['call']) > 1:
                                 for i in cd['call']:
                                     if cd['polling'] not in nsx_manager.list_intervall_cmd: nsx_manager.list_intervall_cmd.append(cd['polling'])
-                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['polling'], i, cd['panelfunction'], cd['datafunction']))
+                                        
+                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['polling'], i, timeout, cd['panelfunction'], cd['datafunction']))
                                 nsx_manager.cmd.append(List_Cmd)
                             else:
                                 if cd['polling'] not in nsx_manager.list_intervall_cmd: nsx_manager.list_intervall_cmd.append(cd['polling'])
-                                nsx_manager.cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['polling'], cd['call'][0], cd['panelfunction'], cd['datafunction']))
+                                nsx_manager.cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['polling'], cd['call'][0], timeout, cd['panelfunction'], cd['datafunction']))
 
                 # Add node in object command
                 for cd in ListAllCmds:
@@ -82,15 +93,19 @@ def discovery(config):
                     if tn.type == value['type']:
                         for cd in value['commands']:
                             List_Cmd = []
+                            if cd['type'] == 'SSH':
+                                timeout = config['General']['ssh_timeout']
+                            else:
+                                timeout = config['General']['api_timeout']
                             if len(cd['call']) > 1:
                                 for i in cd['call']:
                                     if cd['polling'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['polling'])
-                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], i, cd['panelfunction'], cd['datafunction']))
+                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], i, timeout, cd['panelfunction'], cd['datafunction']))
 
                                 tn.cmd.append(List_Cmd)
                             else:
                                 if cd['polling'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['polling'])
-                                tn.cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], cd['call'], cd['panelfunction'], cd['datafunction']))
+                                tn.cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], cd['call'], timeout, cd['panelfunction'], cd['datafunction']))
 
                 if node['node_deployment_info']['resource_type'] == 'EdgeNode':
                     tn.login = config['Component']['Edge']['login']
@@ -114,3 +129,22 @@ def discovery(config):
         print(color.style.RED + "ERROR - discovery: " + color.style.NORMAL + str(error))
         print(color.style.RED + "ERROR - discovery: Can't connect to " + config['Component']['Manager']['fqdn'] + color.style.NORMAL + ' - ' + str(error))
         sys.exit()
+
+def getCommandListbyPooling(CommandList):
+    List_Result = []
+    intervalList = []
+    # create list of interval
+    for cmd in CommandList:
+        if cmd.polling not in intervalList:
+            intervalList.append(cmd.polling)
+
+    
+    for interval in intervalList:
+        List_tmp = []
+        for cmd in CommandList:
+            if cmd.polling == interval:
+                List_tmp.append(cmd)
+
+        List_Result.append(List_tmp)
+
+    return List_Result

@@ -50,7 +50,6 @@ def Manager_Cluster_Data(host, json):
             status = group['group_type'] + ",host=" + host + " STATE=\""+ group['group_status'] +"\""
             Tab_result.append(status)
 
-    logging.debug(Tab_result)
     return Tab_result
 
 def Edge_Int_Data(host, json, Writing=False):

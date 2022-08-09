@@ -8,10 +8,11 @@ import sys, logging
 def influxConnection(dictenv):
     logger = logging.getLogger()
     if logger.isEnabledFor(logging.DEBUG):
-        influxurl = "http://localhost:" + dictenv['INFLUXDB_PORT']
+        host = "localhost"
     else:
-        influxurl = "http://" + dictenv['INFLUXDB_NAME'] + ":" + dictenv['INFLUXDB_PORT']
-    
+        host = dictenv['INFLUXDB_NAME']
+
+    influxurl = "http://" + host + ":" + dictenv['INFLUXDB_PORT']
     influxtoken = dictenv['INFLUXDB_TOKEN']
     influxorg = dictenv['INFLUXDB_ORG']
     influxbucket = dictenv['INFLUXDB_DB']
@@ -30,6 +31,5 @@ def influxConnection(dictenv):
         sys.exit()
 
 def influxWrite(writeinflux, bucket, org, data):
-    logging.debug(data)
-    print(color.style.GREEN + "Writing Data on Influxdb " + color.style.NORMAL)
+    logging.debug("Writing Data on Influxdb: " + ', '.join(data))
     writeinflux.write(bucket, org, data)

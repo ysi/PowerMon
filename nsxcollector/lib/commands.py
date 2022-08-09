@@ -4,12 +4,13 @@ class cmd:
     tn = []
     panels = []
     # init method or constructor
-    def __init__(self, name, type, nodetype, interval, call, panel_function, format_function):
+    def __init__(self, name, type, nodetype, polling, call, timeout, panel_function, format_function):
         self.name = name
         self.type = type
         self.nodetype = nodetype
-        self.interval = interval
+        self.polling = polling
         self.call = call
+        self.timeout = timeout
         self.panel_function = panel_function
         self.format_function = format_function
         self.tn = []

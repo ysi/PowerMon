@@ -31,17 +31,24 @@ def getAPIData(cmd, flagwrite, influxapi=()):
         host_url = cmd.tn[0].vip
     # Get Data from a API call
 
-    logging.debug(cmd.call)
-    for call in cmd.call:
-        print(current_thread().name + ": On " + color.style.GREEN + cmd.tn[0].ip_mgmt + color.style.NORMAL + " - Call " + color.style.GREEN + ', '.join(cmd.call) + color.style.NORMAL)
-        result, code = GetAPIGeneric('https://' + host_url + call, cmd.tn[0].login, cmd.tn[0].password, False)
+    if isinstance(cmd.call, list):
+        for call in cmd.call:
+            print(current_thread().name + ": On " + color.style.GREEN + cmd.tn[0].ip_mgmt + color.style.NORMAL + " - Call " + color.style.GREEN + call + color.style.NORMAL)
+            result, code = GetAPIGeneric('https://' + host_url + call, cmd.tn[0].login, cmd.tn[0].password, cmd.timeout, False)
+            if code > 200:
+                print(current_thread().name + color.style.RED + "ERROR in call + " + call + color.style.NORMAL + " - error " + result)
+    else:
+        print(current_thread().name + ": On " + color.style.GREEN + cmd.tn[0].ip_mgmt + color.style.NORMAL + " - Call " + color.style.GREEN + cmd.call + color.style.NORMAL)
+        result, code = GetAPIGeneric('https://' + host_url + cmd.call, cmd.tn[0].login, cmd.tn[0].password, cmd.timeout, False)
         if code > 200:
-            print(current_thread().name + color.style.RED + "ERROR in call + " + call + color.style.NORMAL + " - error " + result)
-        elif flagwrite:
-            # Call format function of a call
-            function_name = globals()[cmd.format_function]
-            format_data = function_name(cmd.tn[0].ip_mgmt, result)
-            influxdb.influxWrite(influxapi[0],influxapi[1], influxapi[2], format_data )
+            print(current_thread().name + color.style.RED + "ERROR in call + " + cmd.call + color.style.NORMAL + " - error " + result)
+
+    if flagwrite:
+        # Call format function of a call
+        function_name = globals()[cmd.format_function]
+        format_data = function_name(cmd.tn[0].ip_mgmt, result)
+        influxdb.influxWrite(influxapi[0],influxapi[1], influxapi[2], format_data )
+
 
 
 def getSSHData(EdgeGroup, cmd, influxapi=()):
@@ -83,7 +90,7 @@ def getSSHData(EdgeGroup, cmd, influxapi=()):
 
 
 
-def GetAPIGeneric(url, login, password, debug=True, Component='', description=''):
+def GetAPIGeneric(url, login, password, timeout=60, debug=False, Component='', description=''):
     """
     GetAPIGeneric(url, login, password)
     Realize a get in REST/API depending if wants a Json reponse
@@ -102,7 +109,7 @@ def GetAPIGeneric(url, login, password, debug=True, Component='', description=''
     }
     try:
         resultJSON = {}
-        result =  requests.get(url, headers=headers, auth=(login, password), verify=False)
+        result =  requests.get(url, headers=headers, auth=(login, password), verify=False, timeout=timeout)
         if result.status_code == 200:
             if debug:
                 print(color.style.RED + "==> " + color.style.NORMAL + Component + " - " + description + " - " + color.style.GREEN + "Ok" + color.style.NORMAL)
@@ -113,7 +120,7 @@ def GetAPIGeneric(url, login, password, debug=True, Component='', description=''
         print(color.style.RED + "ERROR in API call: " + url + color.style.NORMAL + " : " + str(error))
         raise SystemExit(error)
 
-def PostAPIGeneric(url, login, password, body, debug=True, Component='', description=''):
+def PostAPIGeneric(url, login, password, body, debug=False, Component='', description=''):
     """
     PostAPIGeneric(protocol, fqdn, url, login, password, body)
     Realize a POST in REST/API depending if wants a Json reponse
@@ -170,7 +177,7 @@ def sendCommand(tn, cd, config):
         if str(config['Component']['Manager']['port']) != '':
             port = ':' + str(config['Component']['Manager']['port'])
         url = "https://" + config['Component']['Manager']['fqdn'] + port + cd.call
-        tn_json, code = connection.GetAPIGeneric(url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], False)
+        tn_json, code = connection.GetAPIGeneric(url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
         if code == 200:
             print(color.style.RED + "==> " + color.style.NORMAL + "Testing command on " + tn.ip_mgmt + " - " + cd.call + " - " + color.style.GREEN + "Ok" + color.style.NORMAL)
             return tn_json
