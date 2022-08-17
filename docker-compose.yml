@@ -5,21 +5,22 @@ networks:
 
 services:
   nsxcollector:
-    env_file:
-      - ./.env
-    build: ./nsxcollector/.
+    container_name: $NSXCOLLECTOR_DOCKER_CONTAINER_NAME
     depends_on:
       - influxdb
       - grafana
     links:
-      - influxdb:influxdb
-    container_name: $NSXCOLLECTOR_DOCKER_CONTAINER_NAME
+      - influxdb
+      - grafana
     hostname: nsxcollector
     restart: unless-stopped
     volumes:
       - ./nsxcollector:/nsxcollector
     networks:
       - powermon
+    env_file:
+      - ./.env
+    build: ./nsxcollector/.
 
   influxdb:
     image: influxdb:latest
@@ -58,8 +59,6 @@ services:
       - powermon
     ports:
       - 3000:3000  # Grafana web port
-    links:
-      - influxdb:influxdb
     env_file:
       - ./.env
     environment:
@@ -82,45 +81,46 @@ services:
         target: /etc/grafana/provisioning
         read_only: true
 
-  loki:
-    image: grafana/loki:latest
-    depends_on:
-      - grafana  # indique que le service grafana est nécessaire
-    container_name: $LOKI_DOCKER_CONTAINER_NAME
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - powermon
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: $PROMTAIL_DOCKER_CONTAINER_NAME
-    volumes:
-      - /var/log:/var/log
-    command: -config.file=/etc/promtail/config.yml
-    networks:
-      - powermon
-
-  vault:
-    image: vault:latest
-    container_name: $VAULT_DOCKER_CONTAINER_NAME
-    networks:
-      - powermon
-    volumes:
-        - ./vault/config:/vault/config
-        - ./vault/policies:/vault/policies
-        - ./vault/data:/vault/data
-    ports:
-      - 8200:8200
-    environment:
-      - VAULT_ADDR=http://0.0.0.0:8200
-      - VAULT_API_ADDR=http://0.0.0.0:8200
-      - VAULT_ADDRESS=http://0.0.0.0:8200
-    cap_add:
-      - IPC_LOCK
-    command: vault server -config=/vault/config/vault.json
-
 volumes:
     grafana-data:
         external: false
+  
+  # loki:
+  #   image: grafana/loki:latest
+  #   depends_on:
+  #     - grafana  # indique que le service grafana est nécessaire
+  #   container_name: $LOKI_DOCKER_CONTAINER_NAME
+  #   ports:
+  #     - "3100:3100"
+  #   command: -config.file=/etc/loki/local-config.yaml
+  #   networks:
+  #     - powermon
+
+  # promtail:
+  #   image: grafana/promtail:latest
+  #   container_name: $PROMTAIL_DOCKER_CONTAINER_NAME
+  #   volumes:
+  #     - /var/log:/var/log
+  #   command: -config.file=/etc/promtail/config.yml
+  #   networks:
+  #     - powermon
+
+  # vault:
+  #   image: vault:latest
+  #   container_name: $VAULT_DOCKER_CONTAINER_NAME
+  #   networks:
+  #     - powermon
+  #   volumes:
+  #       - ./vault/config:/vault/config
+  #       - ./vault/policies:/vault/policies
+  #       - ./vault/data:/vault/data
+  #   ports:
+  #     - 8200:8200
+  #   environment:
+  #     - VAULT_ADDR=http://0.0.0.0:8200
+  #     - VAULT_API_ADDR=http://0.0.0.0:8200
+  #     - VAULT_ADDRESS=http://0.0.0.0:8200
+  #   cap_add:
+  #     - IPC_LOCK
+  #   command: vault server -config=/vault/config/vault.json
+

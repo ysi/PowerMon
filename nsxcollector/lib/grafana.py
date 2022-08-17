@@ -18,6 +18,15 @@ class grafana:
         self.login = login
         self.password = password
 
+    def testGrafana(self):
+        influxurl = "http://" + self.host + ":" + self.port
+        code = 0
+        while code != 200:
+            print(color.style.RED + "==> " + color.style.NORMAL + " Trying to connect to Grafana: " + influxurl + color.style.NORMAL)
+            result, code = connection.GetAPIGeneric(influxurl + '/api/folders', self.login, self.password)
+            print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error when connecting to Grafana: trying again")
+
+
     def addFolder(self, folder):
         self.folders.append(folder)
 
@@ -64,9 +73,9 @@ class grafana:
         url = "http://" + self.host + ":" + self.port + '/api/folders'
         result, code = connection.GetAPIGeneric("http://" + self.host + ":" + self.port + '/api/folders/' + folderuid, self.login, self.password)
         if code != 200:
-            connection.PostAPIGeneric(url, self.login, self.password, body, True, 'Grafana', 'Create folder ' + self.name)
+            connection.PostAPIGeneric(url, self.login, self.password, body, True, 'Grafana', 'Create folder ' + foldername)
         else:
-            print(color.style.RED + "==> " + color.style.NORMAL + "Grafana - Folder " + self.name + " already existing")
+            print(color.style.RED + "==> " + color.style.NORMAL + "Grafana - Folder " + foldername + " already existing")
 
 
     def applyDashboard(self, folderuid, dboject):
@@ -176,7 +185,7 @@ class grafana:
                 return dictpanel
 
 
-def createGrafanaEnv(args, config, dictenv, ListTN):
+def createGrafanaEnv(args, config, gf, InDB, ListTN):
     """
     createGrafanaEnv(config, dictenv, ListTN)
     Create the grafana environnement: Folder, Dashboards, Panels
@@ -191,8 +200,8 @@ def createGrafanaEnv(args, config, dictenv, ListTN):
     if args.standalone:
         host = "localhost"
     else:
-        host = dictenv['GRAFANA_NAME']
-    gf = grafana(host, dictenv['GRAFANA_PORT'], dictenv['GRAFANA_ADMIN_USER'], dictenv['GRAFANA_ADMIN_PASSWORD'])
+        host = gf.name
+    # gf = grafana(host, dictenv['GRAFANA_PORT'], dictenv['GRAFANA_ADMIN_USER'], dictenv['GRAFANA_ADMIN_PASSWORD'])
     # Create Folder
     folder_uid = config['General']['Name_Infra'].replace(' ', '')
     folder = gf.folder(config['General']['Name_Infra'], folder_uid)
@@ -201,7 +210,7 @@ def createGrafanaEnv(args, config, dictenv, ListTN):
     for fd in gf.folders:
         gf.applyFolder(fd.uid, fd.name)
     # get datasource name and uid for InfluxDB
-    gf.initDataSource(dictenv['INFLUXDB_DOCKER_CONTAINER_NAME'], dictenv['INFLUXDB_DB'])
+    gf.initDataSource(InDB.name, InDB.bucket)
     # Add Dashboard for Overlay Stuff
     db_overlay = gf.dashboard('Overlay',gf.getFolderUID(config['General']['Name_Infra']), 'Overlay')
     gf.addDashboard(db_overlay)

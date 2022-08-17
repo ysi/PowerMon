@@ -137,17 +137,21 @@ def main():
     dictenv = tools.readENV(args)
     if args.standalone:
         inDBhost = "localhost"
+        grafanaHost = "localhost"
     else:
         inDBhost = dictenv['INFLUXDB_NAME']
-    # Create connection with InfluxDB
-    inDB = influxdb.influxdb(inDBhost,dictenv['INFLUXDB_PORT'], dictenv['INFLUXDB_ORG'], dictenv['INFLUXDB_TOKEN'], dictenv['INFLUXDB_DB'])
+        grafanaHost = dictenv['GRAFANA_NAME']
+    # Create connection with InfluxDB and test connectivity
+    inDB = influxdb.influxdb(inDBhost,dictenv['INFLUXDB_PORT'], dictenv['INFLUXDB_ORG'], dictenv['INFLUXDB_TOKEN'], dictenv['INFLUXDB_DB'], dictenv['INFLUXDB_DOCKER_CONTAINER_NAME'])
     inDB.influxConnection()
+    # Create grafana object and test connectivity
+    gf = grafana.grafana(grafanaHost, dictenv['GRAFANA_PORT'], dictenv['GRAFANA_ADMIN_USER'], dictenv['GRAFANA_ADMIN_PASSWORD'])
+    gf.testGrafana()
     # Connect to NSX and Get Transport Nodes: Create List of Nodes and Commands
     ListTN, ListAllCmds = discovery.discovery(config)
     # Create Grafana Environment (Folder + Dashboard + Panels)
+    grafana.createGrafanaEnv(args, config, gf, inDB, ListTN)
     # Test all commands, and create grafana panels associated
-    grafana.createGrafanaEnv(args, config, dictenv, ListTN)
-
     try:
         # check type of thread
         # Create Thread depend on type of thread
