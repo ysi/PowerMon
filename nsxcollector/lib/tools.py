@@ -1,11 +1,21 @@
 #!/opt/homebrew/bin/python3
 
-import yaml, sys, json, logging, jinja2, pprint
+import yaml, sys, json, logging, jinja2
 from lib import color
 from dotenv.main import dotenv_values
-from jinja2 import PackageLoader
+# from jinja2 import PackageLoader
 
 def renderPanel(panelname, parameters):
+    """
+    Read a YAML File and return Dictionnary
+    Returns
+    ----------
+    grafana json of the panel
+    Parameters
+    ----------
+    panelname (str): Name of the panel
+    parameters Name of YAML file
+    """
     tmp = panelname.replace(" ","-")
     panelname = tmp.lower()
     template_file = panelname + ".j2"
@@ -15,6 +25,7 @@ def renderPanel(panelname, parameters):
         template = templateEnv.get_template(template_file)
         paneljson = template.render(parameters)  # this is where to put args to the template renderer
         json_render = json.loads(paneljson)
+        logging.debug(json_render)
         return json_render
     except ValueError:  # includes simplejson.decoder.JSONDecodeError
         print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error templating ")
@@ -71,7 +82,16 @@ def readYML(YAML_CFG_FILE):
 
 
 def formatResultSSH(output, all=True):
-
+    """
+    Read the environment file
+    Parameters
+    ----------
+    output (str): result of the SSH command
+    all (boolean): if many result commands is in the output
+    Returns
+    ----------
+    a json/dictionay of the result
+    """
     if all:
         for r in output:
             connection = output[r]
@@ -84,6 +104,12 @@ def formatResultSSH(output, all=True):
         return result
 
 def readENV():
+    """
+    Read the environment file
+    Returns
+    ----------
+    a dictionary of the environement file
+    """
     # Load .env file
     envjson = dotenv_values('../.env')
     return envjson

@@ -1,5 +1,5 @@
 #!/opt/homebrew/bin/python3
-import logging, pprint
+import logging
 from lib import tools
 
 def Manager_CPU_Process_Data(host, json):
@@ -70,8 +70,14 @@ def Edge_Int_Data(host, json, Writing=False):
             return Tab_result
 
 
-def Edge_CPU_Panel(host, influxdbuid,infludbname, result):
-    logging.debug(host)
+def Edge_CPU_Data(host, json):
+    # Format 'get get cpu-stats'
+    # if Writing at True - return a ID for another call
+    Tab_result = ["Router,host=" + host + " cpu_usage=" + json['summary'][7].split(':')[1].replace(" ", "")]
+    return Tab_result
+
+def Edge_CPU_Panel(node, dashboard, grafana, result_json):
+    logging.debug(node)
 
 
 def Manager_Cluster_Panel(node, dashboard, grafana, result_json):

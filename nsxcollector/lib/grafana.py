@@ -1,8 +1,6 @@
 #!/opt/homebrew/bin/python3
-from unittest import result
-from lib import connection, color, tools, transportnodes
+from lib import connection, color
 from lib.formatDatas import Edge_Int_Panel, Manager_CPU_Process_Panel, Edge_CPU_Panel, Manager_Cluster_Panel, Edge_Int_Data
-from fabric import Connection
 import sys, logging
 
 
@@ -185,16 +183,16 @@ class grafana:
                 return dictpanel
 
 
-
 def createGrafanaEnv(config, dictenv, ListTN):
     """
-    createGrafanaEnv(dictenv, ListTN)
-    Create the grafana environnement: Folder and Dashboards
+    createGrafanaEnv(config, dictenv, ListTN)
+    Create the grafana environnement: Folder, Dashboards, Panels
 
     Args
     ----------
-    dictenv : .env dictionary
-    ListTN : List of Transport Node Object
+    config (dict): config dictionary
+    dictenv (dict): .env dictionary
+    ListTN (list): List of Transport Node Object
     """
     # init grafana object
     gf = grafana()
@@ -205,18 +203,14 @@ def createGrafanaEnv(config, dictenv, ListTN):
     # Get DataSource ID
     for fd in gf.folders:
         fd.applyFolder(dictenv)
-    
     # get datasource name and uid for InfluxDB
     gf.initDataSource(dictenv)
-
     # Add Dashboard for Overlay Stuff
     db_overlay = gf.dashboard('Overlay',gf.getFolderUID(config['General']['Name_Infra']), 'Overlay')
     gf.addDashboard(db_overlay)
-
     # Add Dashboard for Overlay Stuff
     db_security = gf.dashboard('Security',gf.getFolderUID(config['General']['Name_Infra']), 'Security')
     gf.addDashboard(db_security)    
-
     # Create Dashboard for each type of component
     for tn in ListTN:
         if len(tn.cmd) > 0:
@@ -254,6 +248,7 @@ def createGrafanaEnv(config, dictenv, ListTN):
     # create panel for each TN
     for tn in ListTN:
         if tn.gf_dashboard is not None:
+            # Loop inside all dashboards
             for db in gf.dashboards:
                 if db == tn.gf_dashboard:
                     # Loop in all commands
@@ -263,25 +258,14 @@ def createGrafanaEnv(config, dictenv, ListTN):
                         if isinstance(cmd, list):
                             # get the first result of the command
                             for cd in cmd:
-                                result = result | connection.sendCommand(tn, cd, config)
+                                result = result | connection.sendCommand(tn, cd)
 
-                            # result = connection.sendCommand(tn, cmd[0], config)
-                            # function_name = globals()[cmd[0].format_function]
-                            # list_item = function_name(tn, result, False)
-                            # for rtr in list_item:
-                            #     final_cmd = cmd[1].call.replace('ID', rtr)
-                            #     cmd[1].updateCall(final_cmd)
-                            #     result = connection.sendCommand(tn, cmd[1], config)                                            
-                            #     function_name = globals()[cmd[0].panel_function]
-                            #     dash = function_name(tn, db, gf, result)
-                            # Call format function of a call
                             function_name = globals()[cmd[0].panel_function]
                             dash = function_name(tn, db, gf, result)
 
-
                         # one command process
                         else:
-                            result = connection.sendCommand(tn, cmd, config)
+                            result = connection.sendCommand(tn, cmd)
                             # Call format function of a call
                             function_name = globals()[cmd.panel_function]
                             dash = function_name(tn, db, gf, result)

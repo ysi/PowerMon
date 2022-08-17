@@ -1,6 +1,6 @@
 #!/opt/homebrew/bin/python3
 from lib import connection, color, transportnodes, commands
-import sys, pprint
+import sys, logging
 
 def discovery(config):
     """
@@ -14,7 +14,6 @@ def discovery(config):
     """
     discover_url = '/api/v1/transport-nodes'
     cluster_url = '/api/v1/cluster/status'
-
     # Create a list of Commands
     ListAllCmds = []
     # Loop inside Component in config file
@@ -38,7 +37,8 @@ def discovery(config):
         else:
             url = config['Component']['Manager']['fqdn'] + ":" + str(config['Component']['Manager']['port'])
 
-        print(color.style.RED + "==> " + color.style.NORMAL + "Connecting to NSX Manager " + color.style.GREEN + url + color.style.NORMAL + " and Getting Edge IPs")
+        loginfo = color.style.RED + "==> " + color.style.NORMAL + "Connecting to NSX Manager " + color.style.GREEN + url + color.style.NORMAL + " and Getting Edge IPs"
+        logging.info(loginfo)
         discover_json, code = connection.GetAPIGeneric('https://' + url + discover_url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'], False)
         cluster_json, code = connection.GetAPIGeneric('https://' + url + cluster_url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'], False)
         List_Nodes = []
@@ -53,6 +53,7 @@ def discovery(config):
                 nsx_manager.login = config['Component']['Manager']['login']
                 nsx_manager.password = config['Component']['Manager']['password']
                 nsx_manager.port = config['Component']['Manager']['port']
+                nsx_manager.timeout = config['General']['api_timeout']
                 # Add Command in list of command for each component
                 for key, value in config['Component'].items():
                     if nsx_manager.type == value['type']:
@@ -81,14 +82,14 @@ def discovery(config):
                 
                 List_Nodes.append(nsx_manager)
 
-        # NSX Edge Treatment
+        # NSX Edge and Host Treatment
         if isinstance(discover_json, dict) and 'results' in discover_json and discover_json['result_count'] > 0:
             for node in discover_json['results']:
                 tn = transportnodes.TN(node['display_name'])
                 tn.ip_mgmt = node['node_deployment_info']['ip_addresses'][0]
                 tn.type = node['node_deployment_info']['resource_type']
+                tn.timeout = config['General']['ssh_timeout']
                 tn.cmd = []
-                # Add command
                 for key, value in config['Component'].items():
                     if tn.type == value['type']:
                         for cd in value['commands']:
@@ -105,7 +106,7 @@ def discovery(config):
                                 tn.cmd.append(List_Cmd)
                             else:
                                 if cd['polling'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['polling'])
-                                tn.cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], cd['call'], timeout, cd['panelfunction'], cd['datafunction']))
+                                tn.cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], cd['call'][0], timeout, cd['panelfunction'], cd['datafunction']))
 
                 if node['node_deployment_info']['resource_type'] == 'EdgeNode':
                     tn.login = config['Component']['Edge']['login']
@@ -118,9 +119,19 @@ def discovery(config):
                 for cd in ListAllCmds:
                     if cd.nodetype == tn.type:
                         cd.tn.append(nsx_manager)
-                
-                List_Nodes.append(tn)
+                # Don't add TN if there is no command
+                if len(tn.cmd) > 0:
+                    List_Nodes.append(tn)
 
+        # field all tn on command TN object.
+        for node in List_Nodes:
+            for cmd in node.cmd:
+                if isinstance(cmd, list):
+                    for call in cmd:
+                        call.tn.append(node)
+                else:
+                    cmd.tn.append(node)
+        
         print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('Manager',List_Nodes))) + " NSX Manager")
         print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('EdgeNode',List_Nodes))) + " Edges")
         print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('HostNode',List_Nodes))) + " Hosts")
@@ -138,7 +149,6 @@ def getCommandListbyPooling(CommandList):
         if cmd.polling not in intervalList:
             intervalList.append(cmd.polling)
 
-    
     for interval in intervalList:
         List_tmp = []
         for cmd in CommandList:

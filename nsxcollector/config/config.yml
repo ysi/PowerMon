@@ -5,8 +5,10 @@ General:
 
 
 Thread:
-  # 2 type of thread : Command or Node
-  type: PollingCommands # GlobalCommands, PollingCommands or Node
+  # 3 type of thread : GlobalCommands, PollingCommands or Node
+  # if PollingCommand is used, the polling parameter in Thread will not be used.
+  # only polling value of each commands
+  type: Node # GlobalCommands, PollingCommands or Node
   nb_thread: 2
   polling : 30
 
@@ -22,14 +24,14 @@ Component:
   #   commands: []
 
   Manager:
-    # fqdn: '10.168.165.188'
-    # port: '' 
-    # login: admin
-    # password: 'Admin!23Admin'
-    fqdn: 'localhost'
-    port: '21443' 
+    fqdn: '10.168.165.188'
+    port: '' 
     login: admin
-    password: 'VMware1!VMware1!'
+    password: 'Admin!23Admin'
+    # fqdn: 'localhost'
+    # port: '21443' 
+    # login: admin
+    # password: 'VMware1!VMware1!'
     type: 'Manager'
     # Command can have 2 types : API or SSH
     commands:
@@ -54,7 +56,7 @@ Component:
     login: 'admin'
     password: 'Admin!23Admin'
     type: 'EdgeNode'
-    commands: []
+    commands:
       # -
       #   name: 'Interfaces Stats'
       #   type: 'SSH'
@@ -62,13 +64,13 @@ Component:
       #   datafunction: 'Edge_Int_Data'
       #   panelfunction: 'Edge_Int_Panel'
       #   polling: 10
-      # -
-      #   name: 'Edges CPU'
-      #   type: 'SSH'
-      #   call: ['get cpu-stats']
-      #   datafunction: 'Edge_CPU_Data'
-      #   panelfunction: 'Edge_CPU_Panel'
-      #   polling: 10
+      -
+        name: 'Edges CPU'
+        type: 'SSH'
+        call: ['get cpu-stats']
+        datafunction: 'Edge_CPU_Data'
+        panelfunction: 'Edge_CPU_Panel'
+        polling: 10
 
 
   Host:
