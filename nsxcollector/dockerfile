@@ -1,6 +1,9 @@
 FROM python:latest
+# FROM python:3.10.6-alpine3.15
+ARG ENV
 RUN mkdir /nsxcollector
 WORKDIR /nsxcollector
+# RUN apk add build-base python3-dev
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .

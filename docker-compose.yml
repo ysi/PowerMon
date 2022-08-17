@@ -5,11 +5,17 @@ networks:
 
 services:
   nsxcollector:
-    build: ./nsxcollector/.
-    container_name: $NSXCOLLECTOR_DOCKER_CONTAINER_NAME
-    restart: always
     env_file:
       - ./.env
+    build: ./nsxcollector/.
+    depends_on:
+      - influxdb
+      - grafana
+    links:
+      - influxdb:influxdb
+    container_name: $NSXCOLLECTOR_DOCKER_CONTAINER_NAME
+    hostname: nsxcollector
+    restart: unless-stopped
     volumes:
       - ./nsxcollector:/nsxcollector
     networks:

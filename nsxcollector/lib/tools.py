@@ -1,6 +1,7 @@
 #!/opt/homebrew/bin/python3
 
-import yaml, sys, json, logging, jinja2
+from ast import expr_context
+import yaml, sys, json, logging, jinja2, os
 from lib import color
 from dotenv.main import dotenv_values
 # from jinja2 import PackageLoader
@@ -103,13 +104,36 @@ def formatResultSSH(output, all=True):
         result = json.loads(output.replace('\n', ''))
         return result
 
-def readENV():
+def readENV(args):
     """
     Read the environment file
     Returns
     ----------
     a dictionary of the environement file
     """
+    if args.standalone:
+        try:
+            envjson = dotenv_values("../.env")
+            return envjson
+        except:
+            print(color.style.RED + "ERROR: error to read .env file" + color.style.NORMAL)
+    else:
+        envjson = {
+            'INFLUXDB_DOCKER_CONTAINER_NAME': os.getenv('INFLUXDB_DOCKER_CONTAINER_NAME'),
+            'INFLUXDB_NAME':os.getenv('INFLUXDB_NAME'),
+            'INFLUXDB_PORT':os.getenv('INFLUXDB_PORT'),
+            'INFLUXDB_DB':os.getenv('INFLUXDB_DB'),
+            'INFLUXDB_ADMIN_USER':os.getenv('INFLUXDB_ADMIN_USER'),
+            'INFLUXDB_ADMIN_PASSWORD':os.getenv('INFLUXDB_ADMIN_PASSWORD'),
+            'INFLUXDB_ORG':os.getenv('INFLUXDB_ORG'),
+            'INFLUXDB_TOKEN':os.getenv('INFLUXDB_TOKEN'),
+            'GRAFANA_DOCKER_CONTAINER_NAME':os.getenv('GRAFANA_DOCKER_CONTAINER_NAME'),
+            'GRAFANA_ADMIN_USER':os.getenv('GRAFANA_ADMIN_USER'),
+            'GRAFANA_ADMIN_PASSWORD':os.getenv('GRAFANA_ADMIN_PASSWORD'),
+            'GRAFANA_NAME':os.getenv('GRAFANA_NAME'),
+            'GRAFANA_PORT':os.getenv('GRAFANA_PORT'),
+        }
+        return envjson
+
     # Load .env file
-    envjson = dotenv_values('../.env')
-    return envjson
+

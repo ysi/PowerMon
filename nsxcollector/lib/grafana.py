@@ -11,8 +11,12 @@ class grafana:
     dashboards = []
     type = ""
     name = ""
-    def __init__(self):
+    def __init__(self, host, port, login, password):
         self.name = 'PowerMon'
+        self.host = host
+        self.port = port
+        self.login = login
+        self.password = password
 
     def addFolder(self, folder):
         self.folders.append(folder)
@@ -31,23 +35,78 @@ class grafana:
             if fd.name == name:
                 return fd.uid
 
-    def initDataSource(self, dictenv):
+    def initDataSource(self, influxdb_name, influxdb_bucket):
         """
         initialize the datasource name and UID
         """
-        grafanaport = dictenv['GRAFANA_PORT']
-        grafanaurl = "http://" + dictenv['GRAFANA_NAME'] + ":" + grafanaport
-        grafanalogin = dictenv['GRAFANA_ADMIN_USER']
-        grafanapassword = dictenv['GRAFANA_ADMIN_PASSWORD']
-
-        url = grafanaurl + '/api/datasources/name/' + dictenv['INFLUXDB_DOCKER_CONTAINER_NAME']
-        response, code = connection.GetAPIGeneric(url, grafanalogin, grafanapassword)
+        url = "http://" + self.host + ":" + self.port + '/api/datasources/name/' + influxdb_name
+        response, code = connection.GetAPIGeneric(url, self.login, self.password)
         if code != 200:
-            print(color.style.RED + "==> ERROR: " + color.style.NORMAL + "Grafana - Datasource " + dictenv['INFLUXDB_DOCKER_CONTAINER_NAME'] + " not found")
+            print(color.style.RED + "==> ERROR: " + color.style.NORMAL + "Grafana - Datasource " + influxdb_name + " not found")
             sys.exit()
         else:
             self.datasource_uid = response['uid']
-            self.datasource_bucket = dictenv['INFLUXDB_DB']
+            self.datasource_bucket = influxdb_bucket
+
+
+    def applyFolder(self, folderuid, foldername):
+        """
+        applyFolder(dictenv)
+        apply in grafana a folder by request API
+        Args
+        ----------
+        dictenv : .env dictionary
+        """
+        body = {
+            "uid": folderuid,
+            "title": foldername
+        }
+        url = "http://" + self.host + ":" + self.port + '/api/folders'
+        result, code = connection.GetAPIGeneric("http://" + self.host + ":" + self.port + '/api/folders/' + folderuid, self.login, self.password)
+        if code != 200:
+            connection.PostAPIGeneric(url, self.login, self.password, body, True, 'Grafana', 'Create folder ' + self.name)
+        else:
+            print(color.style.RED + "==> " + color.style.NORMAL + "Grafana - Folder " + self.name + " already existing")
+
+
+    def applyDashboard(self, folderuid, dboject):
+        """
+        applyDashboard(dictenv, )
+        Apply dashboard object in Grafana by REST/API
+        Args
+        ----------
+        dictenv : .env dictionary
+        """
+        grafanaurl = "http://" + self.host + ":" + self.port
+        url = grafanaurl + '/api/dashboards/db'
+        # construct Panel json
+        list_panel = []
+        for pn in dboject.panels:
+            list_panel.append(pn.json_file)
+            # list_panel.append(pn.createDictPanel())
+        body = {
+                "dashboard": {
+                "title": dboject.name,
+                "panels": list_panel,
+                "uid": dboject.uid,
+                "tags": [ "powermon" ],
+                "timezone": "browser",
+                "schemaVersion": 16,
+                "version": 0,
+                "refresh": "25s"
+                },
+                "folderUid": folderuid,
+                "message": "Created by PowerMon",
+                "overwrite": False
+        }
+        resul, code = connection.GetAPIGeneric(grafanaurl + '/api/dashboards/uid/' + dboject.uid, self.login, self.password)
+        if code != 200:
+            connection.PostAPIGeneric(url, self.login, self.password, body, True, 'Grafana', 'Create Dashboard ' + dboject.name)
+        else:
+            print(color.style.RED + "==> " + color.style.NORMAL + "Grafana - Dashboard " + dboject.name + " already existing")
+        
+        return dboject.uid
+
 
     # Object Class for Grafana Folder
     class folder:
@@ -55,31 +114,6 @@ class grafana:
         def __init__(self, name, uid):
             self.uid = uid
             self.name = name
-
-        def applyFolder(self, dictenv):
-            """
-            applyFolder(dictenv)
-            apply in grafana a folder by request API
-
-            Args
-            ----------
-            dictenv : .env dictionary
-            """
-            body = {
-                "uid": self.uid,
-                "title": self.name
-            }
-            grafanaport = dictenv['GRAFANA_PORT']
-            grafanaurl = "http://" + dictenv['GRAFANA_NAME'] + ":" + grafanaport
-            grafanalogin = dictenv['GRAFANA_ADMIN_USER']
-            grafanapassword = dictenv['GRAFANA_ADMIN_PASSWORD']
-            url = grafanaurl + '/api/folders'
-
-            result, code = connection.GetAPIGeneric(url + '/' + self.uid, grafanalogin, grafanapassword)
-            if code != 200:
-                connection.PostAPIGeneric(url, grafanalogin, grafanapassword, body, True, 'Grafana', 'Create folder ' + self.name)
-            else:
-                print(color.style.RED + "==> " + color.style.NORMAL + "Grafana - Folder " + self.name + " already existing")
 
 
     # Object Class for Grafana Dashboard
@@ -97,48 +131,7 @@ class grafana:
         def addPanel(self, panel):
             self.panels.append(panel)
 
-        def applyDashboard(self, dictenv):
-            """
-            applyDashboard(dictenv, )
-            Apply dashboard object in Grafana by REST/API
 
-            Args
-            ----------
-            dictenv : .env dictionary
-            """
-            grafanaport = dictenv['GRAFANA_PORT']
-            grafanaurl = "http://" + dictenv['GRAFANA_NAME'] + ":" + grafanaport
-            grafanalogin = dictenv['GRAFANA_ADMIN_USER']
-            grafanapassword = dictenv['GRAFANA_ADMIN_PASSWORD']
-            url = grafanaurl + '/api/dashboards/db'
-            # construct Panel json
-            list_panel = []
-            for pn in self.panels:
-                list_panel.append(pn.json_file)
-                # list_panel.append(pn.createDictPanel())
-
-            body = {
-                    "dashboard": {
-                    "title": self.name,
-                    "panels": list_panel,
-                    "uid": self.uid,
-                    "tags": [ "powermon" ],
-                    "timezone": "browser",
-                    "schemaVersion": 16,
-                    "version": 0,
-                    "refresh": "25s"
-                    },
-                    "folderUid": self.folder,
-                    "message": "Created by PowerMon",
-                    "overwrite": False
-            }
-            resul, code = connection.GetAPIGeneric(grafanaurl + '/api/dashboards/uid/' + self.uid, grafanalogin, grafanapassword)
-            if code != 200:
-                connection.PostAPIGeneric(url, grafanalogin, grafanapassword, body, True, 'Grafana', 'Create Dashboard ' + self.name)
-            else:
-                print(color.style.RED + "==> " + color.style.NORMAL + "Grafana - Dashboard " + self.name + " already existing")
-            
-            return self.uid
 
         class panel:
             uid = ''
@@ -183,7 +176,7 @@ class grafana:
                 return dictpanel
 
 
-def createGrafanaEnv(config, dictenv, ListTN):
+def createGrafanaEnv(args, config, dictenv, ListTN):
     """
     createGrafanaEnv(config, dictenv, ListTN)
     Create the grafana environnement: Folder, Dashboards, Panels
@@ -195,16 +188,20 @@ def createGrafanaEnv(config, dictenv, ListTN):
     ListTN (list): List of Transport Node Object
     """
     # init grafana object
-    gf = grafana()
+    if args.standalone:
+        host = "localhost"
+    else:
+        host = dictenv['GRAFANA_NAME']
+    gf = grafana(host, dictenv['GRAFANA_PORT'], dictenv['GRAFANA_ADMIN_USER'], dictenv['GRAFANA_ADMIN_PASSWORD'])
     # Create Folder
     folder_uid = config['General']['Name_Infra'].replace(' ', '')
     folder = gf.folder(config['General']['Name_Infra'], folder_uid)
     gf.addFolder(folder)
     # Get DataSource ID
     for fd in gf.folders:
-        fd.applyFolder(dictenv)
+        gf.applyFolder(fd.uid, fd.name)
     # get datasource name and uid for InfluxDB
-    gf.initDataSource(dictenv)
+    gf.initDataSource(dictenv['INFLUXDB_DOCKER_CONTAINER_NAME'], dictenv['INFLUXDB_DB'])
     # Add Dashboard for Overlay Stuff
     db_overlay = gf.dashboard('Overlay',gf.getFolderUID(config['General']['Name_Infra']), 'Overlay')
     gf.addDashboard(db_overlay)
@@ -272,5 +269,5 @@ def createGrafanaEnv(config, dictenv, ListTN):
 
     # Apply all Dashboards
     for db in gf.dashboards:
-        db.applyDashboard(dictenv)
+        gf.applyDashboard(gf.getFolderUID(config['General']['Name_Infra']), db)
     
