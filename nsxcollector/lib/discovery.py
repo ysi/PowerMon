@@ -124,7 +124,7 @@ def discovery(config):
                 if len(tn.cmd) > 0:
                     List_Nodes.append(tn)
 
-        # field all tn on command TN object.
+        # field all tn on command object.
         for node in List_Nodes:
             for cmd in node.cmd:
                 if isinstance(cmd, list):

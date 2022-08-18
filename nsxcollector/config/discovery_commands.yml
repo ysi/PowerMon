@@ -1,0 +1,17 @@
+commands:
+  -
+    name: 'Segments'
+    call: '/policy/api/v1/infra/segments'
+    datafunction: 'Discovery_Segments'
+  -
+    name: 'T0'
+    call: '/policy/api/v1/infra/tier-0s'
+    datafunction: 'Discovery_T0'
+  -
+    name: 'T1'
+    call: '/policy/api/v1/infra/tier-1s'
+    datafunction: 'Discovery_T1'
+  -
+    name: 'NSX'
+    call: '/api/v1/cluster/status'
+    datafunction: 'Discover_NSX'
