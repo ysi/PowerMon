@@ -21,16 +21,3 @@ class cmd:
 
     def __getitem__(self, key): # this allows getting an element (overrided method)
         return self.tn[key]
-
-def listName(list):
-    listname = []
-    for item in list:
-        listname.append(item.name)
-    return listname
-
-def listCall(list):
-    listcall = []
-    for item in list:
-        listcall.append(item.call)
-
-    return listcall

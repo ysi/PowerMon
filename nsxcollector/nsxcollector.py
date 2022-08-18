@@ -27,17 +27,17 @@ def collectData(elementlist,type_thread, inDB):
         for item in elementlist:
             if item.type == 'API':
                 for node in item.tn: 
-                    result = connection.sendCommand(node,item, False)
+                    result = connection.sendCommand(node,item)
                     inDB.influxWrite(node.ip_mgmt,item, result)
 
             else:
                 if len(item.tn) > 1:
                     for node in item.tn: 
-                        result = connection.sendCommand(node,item, True)
+                        result = connection.sendCommand(node,item)
                         inDB.influxWrite(node.ip_mgmt,item, result )
 
                 else:
-                    result = connection.sendCommand(item.tn[0],item, False)
+                    result = connection.sendCommand(item.tn[0],item)
                     inDB.influxWrite(item[0].ip_mgmt, item, result)
 
 

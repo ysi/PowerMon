@@ -49,6 +49,13 @@ Component:
         datafunction: 'Manager_Cluster_Data'
         panelfunction: 'Manager_Cluster_Panel'
         polling: 15
+      # -
+      #   name: 'Status Transport Nodes'
+      #   type: 'API'
+      #   call: ['/api/v1/transport-nodes/ID/status?source=realtime']
+      #   datafunction: 'TN_Status_Data'
+      #   panelfunction: 'TN_Status_Panel'
+      #   polling: 15
 
 
 

@@ -19,12 +19,18 @@ class grafana:
         self.password = password
 
     def testGrafana(self):
+        """
+        Connectivity test for Grafana
+        """
         influxurl = "http://" + self.host + ":" + self.port
         code = 0
         while code != 200:
-            print(color.style.RED + "==> " + color.style.NORMAL + " Trying to connect to Grafana: " + influxurl + color.style.NORMAL)
+            print(color.style.RED + "==> " + color.style.NORMAL + "Trying to connect to Grafana: " + influxurl + color.style.NORMAL)
             result, code = connection.GetAPIGeneric(influxurl + '/api/folders', self.login, self.password)
-            print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error when connecting to Grafana: trying again")
+            if code != 200:
+                print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error when connecting to Grafana: trying again")
+        
+        print(color.style.RED + "==> " + color.style.NORMAL + "Connection to Grafana: "  + color.style.GREEN + "Established" + color.style.NORMAL)
 
 
     def addFolder(self, folder):
@@ -139,8 +145,6 @@ class grafana:
 
         def addPanel(self, panel):
             self.panels.append(panel)
-
-
 
         class panel:
             uid = ''

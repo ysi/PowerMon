@@ -13,6 +13,11 @@ def Manager_CPU_Process_Data(host, json):
 
     return Tab_result
 
+def TN_Status_Data(host, json):
+    # Format result of call api /api/v1/transport-nodes/<TN_UUID>/status?source=realtime
+    Tab_result = []
+    return Tab_result
+
 def Manager_Cluster_Data(host, json):
     # Format result of call api /api/v1/cluster/status
     Tab_result = []

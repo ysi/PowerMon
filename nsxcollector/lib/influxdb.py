@@ -32,16 +32,16 @@ class influxdb:
         while result is None:
             print(color.style.RED + "==> " + color.style.NORMAL + " Trying to connect to InfluxDB: " + influxurl + color.style.NORMAL)
             try:
-                log = color.style.RED + "==> " + color.style.NORMAL + "Connecting to InfluxDB: " + influxurl + " - " + color.style.GREEN + "Ok" + color.style.NORMAL
                 client = InfluxDBClient(url=influxurl, token=self.token, org=self.org)
                 self.api = client.write_api(write_options=SYNCHRONOUS)
                 # Test list Bucket to check if Influxdb is up and running
                 buckets_api = client.buckets_api()
                 result = buckets_api.find_buckets()
-                logging.info(log)
             except Exception as esx:
                 logging.debug(esx)
                 print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error when connecting to InfluxDB: trying again")
+
+        print(color.style.RED + "==> " + color.style.NORMAL + "Connection to InfluxDB: "  + color.style.GREEN + "Established" + color.style.NORMAL)
 
     def influxWrite(self, tn, cmd, json):
         """

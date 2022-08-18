@@ -89,6 +89,7 @@ def discovery(config):
                 tn.ip_mgmt = node['node_deployment_info']['ip_addresses'][0]
                 tn.type = node['node_deployment_info']['resource_type']
                 tn.timeout = config['General']['ssh_timeout']
+                tn.uuid = node['node_id']
                 tn.cmd = []
                 for key, value in config['Component'].items():
                     if tn.type == value['type']:
