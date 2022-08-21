@@ -1,142 +1,164 @@
 #!/opt/homebrew/bin/python3
-from lib import connection, color, transportnodes, commands
+from lib import connection, color, transportnodes, commands, managers, routers, segments, tools
 import sys, logging
+
+
+class nsx_infra:
+    def __init__(self, name, url_api):
+        self.name = name
+        self.url_api = url_api
+        self.cluster = None
+        self.managers = []
+        self.nodes = []
+        self.segments = []
+        self.t0_routers = []
+        self.t1_routers = []
+
+    def viewInfra(self):
+        self.cluster.viewCluster()
+        for node in self.nodes:
+            node.viewTN()
+        for sg in self.segments:
+            sg.viewSegment()
+        for t0 in self.t0_routers:
+            t0.viewRouter()
+        for t1 in self.t1_routers:
+            t1.viewRouter()
+
+    def getCommandsPolling(self):
+        Tab_Result = []
+        # get command in Cluster
+        for call in self.cluster.calls:
+            if call.usedforPolling: Tab_Result.append(call)
+        # get commands in all nodes
+        for node in self.nodes:
+            Tab_Result = Tab_Result + node.getIntCommandsPolling()
+        # get commands in all segments
+        for seg in self.segments:
+            if seg.call.usedforPolling: Tab_Result.append(call)
+        # get commands in all T0 routers
+        for t0 in self.nodes:
+            Tab_Result = Tab_Result + t0.getIntCommandsPolling()
+        # get commands in all T1 routers
+        for t1 in self.nodes:
+            Tab_Result = Tab_Result + t1.getIntCommandsPolling()
+        
+        return Tab_Result
 
 def discovery(config):
     """
-    discovery(config)
-    function to discover all components in NSX
+    discover all components in NSX
     Return a list of nodes object and the NSX session
 
     Args
     ----------
     config : yaml config dictionnay
     """
-    discover_url = '/api/v1/transport-nodes'
-    cluster_url = '/api/v1/cluster/status'
-    # Create a list of Commands
-    ListAllCmds = []
-    # Loop inside Component in config file
-    for key, node in config['Component'].items():
-        if node['commands'] is None or len(node['commands']) == 0: break
-        for cmdnode in node['commands']:
-            if cmdnode['type'] == 'SSH':
-                timeout = config['General']['ssh_timeout']
-            else:
-                timeout = config['General']['api_timeout']
-            cmd = commands.cmd(cmdnode['name'], cmdnode['type'], node['type'], cmdnode['polling'], cmdnode['call'], timeout, cmdnode['panelfunction'], cmdnode['datafunction'])
-            
-            if cmd not in ListAllCmds:
-                ListAllCmds.append(cmd)
-    # Get IPs Edge and collect NSX Manager Data through API
-    # Connect to NSX and Get Transport Nodes
     try:
-        # List of Edge IPs
+        # Connect to NSX Manager
         if config['Component']['Manager']['port'] is None or config['Component']['Manager']['port'] == '':
-            url = config['Component']['Manager']['fqdn']
+            url = 'https://' + config['Component']['Manager']['fqdn']
         else:
-            url = config['Component']['Manager']['fqdn'] + ":" + str(config['Component']['Manager']['port'])
-
-        loginfo = color.style.RED + "==> " + color.style.NORMAL + "Connecting to NSX Manager " + color.style.GREEN + url + color.style.NORMAL + " and Getting Edge IPs"
-        logging.info(loginfo)
-        discover_json, code = connection.GetAPIGeneric('https://' + url + discover_url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'], False)
-        cluster_json, code = connection.GetAPIGeneric('https://' + url + cluster_url, config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'], False)
-        List_Nodes = []
+            url = 'https://' + config['Component']['Manager']['fqdn'] + ":" + str(config['Component']['Manager']['port'])
+        # Create infrastructure object
+        infra = nsx_infra(config['General']['Name_Infra'].replace(' ', ''), url)
+        logging.info(color.style.RED + "==> " + color.style.NORMAL + "Connecting to NSX Manager " + color.style.GREEN + url + color.style.NORMAL + " and Getting Edge IPs")
         # NSX Manager Cluster
-        if isinstance(cluster_json, dict):
+        cluster_json, code = connection.GetAPIGeneric(url + config['Monitoring_calls']['nsx_cluster_status']['call'], config['Component']['Manager']['login'], config['Component']['Manager']['password'])
+        if code == 200 and isinstance(cluster_json, dict):
+            nsx_cluster = managers.Cluster(cluster_json['cluster_id'], config['Component']['Manager']['fqdn'])
+            cluster_cmd = commands.cmd('nsx_cluster_status_call',config['Monitoring_calls']['nsx_cluster_status'], nsx_cluster, config['General']['api_timeout'])
+            nsx_cluster.calls.append(cluster_cmd)
+            backup_cmd = commands.cmd('nsx_cluster_backup_call',config['Monitoring_calls']['nsx_cluster_backup'], nsx_cluster, config['General']['api_timeout'])
+            nsx_cluster.calls.append(backup_cmd)
+
             for member in cluster_json['detailed_cluster_status']['groups'][0]['members']:
-                nsx_manager = transportnodes.TN(member['member_fqdn'])
+                nsx_manager = managers.Manager(member['member_fqdn'])
                 nsx_manager.ip_mgmt = member['member_ip']
                 nsx_manager.uuid = member['member_uuid']
                 nsx_manager.vip = config['Component']['Manager']['fqdn']
-                nsx_manager.type = 'Manager'
                 nsx_manager.login = config['Component']['Manager']['login']
                 nsx_manager.password = config['Component']['Manager']['password']
                 nsx_manager.port = config['Component']['Manager']['port']
-                nsx_manager.timeout = config['General']['api_timeout']
-                # Add Command in list of command for each component
-                for key, value in config['Component'].items():
-                    if nsx_manager.type == value['type']:
-                        for cd in value['commands']:
-                            List_Cmd = []
-                            if cd['type'] == 'SSH':
-                                timeout = config['General']['ssh_timeout']
-                            else:
-                                timeout = config['General']['api_timeout']
-
-
-                            if len(cd['call']) > 1:
-                                for i in cd['call']:
-                                    if cd['polling'] not in nsx_manager.list_intervall_cmd: nsx_manager.list_intervall_cmd.append(cd['polling'])
-                                        
-                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['polling'], i, timeout, cd['panelfunction'], cd['datafunction']))
-                                nsx_manager.cmd.append(List_Cmd)
-                            else:
-                                if cd['polling'] not in nsx_manager.list_intervall_cmd: nsx_manager.list_intervall_cmd.append(cd['polling'])
-                                nsx_manager.cmd.append(commands.cmd(cd['name'], cd['type'], nsx_manager.type, cd['polling'], cd['call'][0], timeout, cd['panelfunction'], cd['datafunction']))
-
-                # Add node in object command
-                for cd in ListAllCmds:
-                    if cd.nodetype == 'Manager':
-                        cd.tn.append(nsx_manager)
-                
-                List_Nodes.append(nsx_manager)
-
+                nsx_cluster.members.append(nsx_manager)
+                infra.cluster = nsx_cluster
+        
         # NSX Edge and Host Treatment
-        if isinstance(discover_json, dict) and 'results' in discover_json and discover_json['result_count'] > 0:
-            for node in discover_json['results']:
-                tn = transportnodes.TN(node['display_name'])
+        tn_json, code = connection.GetAPIGeneric(url + config['Monitoring_calls']['transport_nodes']['call'], config['Component']['Manager']['login'], config['Component']['Manager']['password'])
+        if code == 200 and isinstance(tn_json, dict) and 'results' in tn_json and tn_json['result_count'] > 0:
+            for node in tn_json['results']:
+                logging.info(color.style.RED + "==> " + color.style.NORMAL + "Found Transport Node " + node['display_name'])
+                tn = transportnodes.TN(node['display_name'], node['node_id'])
+                config_call = config['Monitoring_calls']['transport_nodes']
+                config_call['call'] = config_call['call'] + '/' + node['node_id']
                 tn.ip_mgmt = node['node_deployment_info']['ip_addresses'][0]
                 tn.type = node['node_deployment_info']['resource_type']
-                tn.timeout = config['General']['ssh_timeout']
-                tn.uuid = node['node_id']
-                tn.cmd = []
-                for key, value in config['Component'].items():
-                    if tn.type == value['type']:
-                        for cd in value['commands']:
-                            List_Cmd = []
-                            if cd['type'] == 'SSH':
-                                timeout = config['General']['ssh_timeout']
-                            else:
-                                timeout = config['General']['api_timeout']
-                            if len(cd['call']) > 1:
-                                for i in cd['call']:
-                                    if cd['polling'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['polling'])
-                                    List_Cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], i, timeout, cd['panelfunction'], cd['datafunction']))
+                tnstatus_config_call = config['Monitoring_calls']['tn_status']
+                tnstatus_config_call['call'] = tnstatus_config_call['call'].replace('TNID',node['node_id'])
+                tn_int_call = config['Monitoring_calls']['tn_interfaces']['call'].replace('TNID', tn.uuid)
+                tn.discoverInterfaces(tn_int_call, config['Monitoring_calls']['tn_interfaces_stats'],url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
+                tn.call = commands.cmd('tn_status_call',config_call, tn, config['General']['api_timeout'])
+                tn.tn_status_call = commands.cmd('tn_status_call',tnstatus_config_call, tn, config['General']['api_timeout'])
+                infra.nodes.append(tn)
 
-                                tn.cmd.append(List_Cmd)
-                            else:
-                                if cd['polling'] not in tn.list_intervall_cmd: tn.list_intervall_cmd.append(cd['polling'])
-                                tn.cmd.append(commands.cmd(cd['name'], cd['type'], tn.type, cd['polling'], cd['call'][0], timeout, cd['panelfunction'], cd['datafunction']))
+        # T0 discovery
+        t0_json, code, result = connection.GetAPIGeneric(url + config['Monitoring_calls']['t0']['call'], config['Component']['Manager']['login'], config['Component']['Manager']['password'], True)
+        names = tools.json_extract(result.json(), 'ha_mode')
+        if code == 200 and isinstance(t0_json, dict) and 'results' in t0_json and t0_json['result_count'] > 0:
+            for t0 in t0_json['results']:
+                logging.info(color.style.RED + "==> " + color.style.NORMAL + "Found T0 " + t0['display_name'])
+                rtrT0 = routers.Router(t0['display_name'], t0['id'], t0['unique_id'])
+                rtrT0.type = t0['resource_type']
+                rtrT0.ha_mode = t0['ha_mode']
+                rtrT0.failover_mode = t0['failover_mode']
+                config['Monitoring_calls']['t0']
+                rtrT0_config = config['Monitoring_calls']['t0']
+                rtrT0_config['call'] = rtrT0_config['call'] + '/' + t0['display_name']
+                rtrT0.getLocalService(url,config['Monitoring_calls']['t0_localservice']['call'],config['Component']['Manager']['login'], config['Component']['Manager']['password'])
+                rtrT0.discoverInterfaces(config['Monitoring_calls']['t0_interfaces']['call'], config['Monitoring_calls']['t0_interfaces_stats'],url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
+                rtrT0.call = commands.cmd('t0_call',rtrT0_config, rtrT0, config['General']['api_timeout'])
+                infra.t0_routers.append(rtrT0)
 
-                if node['node_deployment_info']['resource_type'] == 'EdgeNode':
-                    tn.login = config['Component']['Edge']['login']
-                    tn.password = config['Component']['Edge']['password']
-                if node['node_deployment_info']['resource_type'] == 'HostNode':
-                    tn.login = config['Component']['Host']['login']
-                    tn.password = config['Component']['Host']['password']
+        # T1 discovery
+        t1_json, code = connection.GetAPIGeneric(url + config['Monitoring_calls']['t1']['call'], config['Component']['Manager']['login'], config['Component']['Manager']['password'])
+        if code == 200 and isinstance(t1_json, dict) and 'results' in t1_json and t1_json['result_count'] > 0:
+            for t1 in t1_json['results']:
+                logging.info(color.style.RED + "==> " + color.style.NORMAL + "Found T1 " + t1['display_name'])
+                rtrT1 = routers.Router(t1['display_name'], t1['id'], t1['unique_id'])
+                rtrT1.ha_mode = t1['ha_mode']
+                rtrT1.type = t1['resource_type']
+                rtrT1.failover_mode = t1['failover_mode']
+                rtrT1_config = config['Monitoring_calls']['t1']
+                rtrT1_config['call'] = rtrT1_config['call'] + '/' + t1['display_name']
+                rtrT1.getLocalService(url,config['Monitoring_calls']['t1_localservice']['call'],config['Component']['Manager']['login'], config['Component']['Manager']['password'])
+                rtrT1.discoverInterfaces(config['Monitoring_calls']['t1_interfaces']['call'], config['Monitoring_calls']['t1_interfaces_stats'],url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
+                rtrT1.call = commands.cmd('t1_call',rtrT1_config, rtrT1, config['General']['api_timeout'])
+                infra.t1_routers.append(rtrT1)
 
-                # Add node in object command
-                for cd in ListAllCmds:
-                    if cd.nodetype == tn.type:
-                        cd.tn.append(nsx_manager)
-                # Don't add TN if there is no command
-                if len(tn.cmd) > 0:
-                    List_Nodes.append(tn)
+        # Segments discovery
+        segment_json, code = connection.GetAPIGeneric(url + config['Monitoring_calls']['segments']['call'], config['Component']['Manager']['login'], config['Component']['Manager']['password'])
+        if code == 200 and isinstance(segment_json, dict) and 'results' in segment_json and segment_json['result_count'] > 0:
+            for seg in segment_json['results']:
+                logging.info(color.style.RED + "==> " + color.style.NORMAL + "Found Segment " + seg['display_name'])
+                SG = segments.Segment(seg['display_name'], seg['id'], seg['unique_id'])
+                SG.connectivity = seg['advanced_config']['connectivity']
+                SG.admin_state = seg['admin_state']
+                SG_config = config['Monitoring_calls']['segments']
+                SG_config['call'] = SG_config['call'] + '/' + seg['display_name']
+                SG.type = seg['type']
+                if 'vlan_ids' in seg:
+                    SG.vlan_ids = seg['vlan_ids']
+                SG.call = commands.cmd('segment_call',SG_config, SG, config['General']['api_timeout'])
+                infra.segments.append(SG)
 
-        # field all tn on command TN object.
-        for node in List_Nodes:
-            for cmd in node.cmd:
-                if isinstance(cmd, list):
-                    for call in cmd:
-                        call.tn.append(node)
-                else:
-                    cmd.tn.append(node)
-        
-        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('Manager',List_Nodes))) + " NSX Manager")
-        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('EdgeNode',List_Nodes))) + " Edges")
-        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('HostNode',List_Nodes))) + " Hosts")
-        return List_Nodes, ListAllCmds
+
+        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(infra.cluster.members)) + " NSX Manager(s)")
+        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('EdgeNode',infra.nodes))) + " Edge(s)")
+        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('HostNode',infra.nodes))) + " Host(s)")
+        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(infra.t0_routers)) + " T0 Router(s)")
+        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(infra.t1_routers)) + " T1 Router(s)")
+        print(color.style.RED + "==> " + color.style.NORMAL + "Found " + str(len(infra.segments)) + " Segment(s)")
+        return infra
     except Exception as error:
         print(color.style.RED + "ERROR - discovery: " + color.style.NORMAL + str(error))
         print(color.style.RED + "ERROR - discovery: Can't connect to " + config['Component']['Manager']['fqdn'] + color.style.NORMAL + ' - ' + str(error))

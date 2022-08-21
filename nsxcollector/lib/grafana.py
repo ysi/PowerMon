@@ -1,6 +1,6 @@
 #!/opt/homebrew/bin/python3
 from lib import connection, color
-from lib.formatDatas import Edge_Int_Panel, Manager_CPU_Process_Panel, Edge_CPU_Panel, Manager_Cluster_Panel, Edge_Int_Data
+from lib.panels import simplePanel
 import sys, logging
 
 
@@ -66,11 +66,11 @@ class grafana:
 
     def applyFolder(self, folderuid, foldername):
         """
-        applyFolder(dictenv)
         apply in grafana a folder by request API
         Args
         ----------
-        dictenv : .env dictionary
+        folderuid (str)
+        foldername (str)
         """
         body = {
             "uid": folderuid,
@@ -86,11 +86,7 @@ class grafana:
 
     def applyDashboard(self, folderuid, dboject):
         """
-        applyDashboard(dictenv, )
         Apply dashboard object in Grafana by REST/API
-        Args
-        ----------
-        dictenv : .env dictionary
         """
         grafanaurl = "http://" + self.host + ":" + self.port
         url = grafanaurl + '/api/dashboards/db'
@@ -136,12 +132,11 @@ class grafana:
         uid = ''
         panels = []
         # init method or constructor
-        def __init__(self, name, folder, type):
+        def __init__(self, name, folder):
             self.name = name
             self.uid = name.replace(' ', '')
             self.folder = folder
             self.panels = []
-            self.type = type
 
         def addPanel(self, panel):
             self.panels.append(panel)
@@ -155,11 +150,9 @@ class grafana:
             gridPos = {}
             options = {}
             # init method or constructor
-            def __init__(self, title, influxdbuid, infludbname,type):
+            def __init__(self, title, type):
                 self.title = title
                 self.type = type
-                self.influxdbuid = influxdbuid
-                self.infludbname = infludbname
                 self.targets = []
                 self.fieldConfig = {}
                 self.gridPos = {}
@@ -189,23 +182,24 @@ class grafana:
                 return dictpanel
 
 
-def createGrafanaEnv(args, config, gf, InDB, ListTN):
+def createGrafanaEnv(args, config, gf, InDB, infra):
     """
     createGrafanaEnv(config, dictenv, ListTN)
     Create the grafana environnement: Folder, Dashboards, Panels
 
     Args
     ----------
+    args: agruments from command line
     config (dict): config dictionary
-    dictenv (dict): .env dictionary
-    ListTN (list): List of Transport Node Object
+    gf (obj): grafana object
+    InDB (obj): InfluxDB object
+    infra (obj): Infrastructure Object
     """
     # init grafana object
     if args.standalone:
         host = "localhost"
     else:
         host = gf.name
-    # gf = grafana(host, dictenv['GRAFANA_PORT'], dictenv['GRAFANA_ADMIN_USER'], dictenv['GRAFANA_ADMIN_PASSWORD'])
     # Create Folder
     folder_uid = config['General']['Name_Infra'].replace(' ', '')
     folder = gf.folder(config['General']['Name_Infra'], folder_uid)
@@ -215,70 +209,13 @@ def createGrafanaEnv(args, config, gf, InDB, ListTN):
         gf.applyFolder(fd.uid, fd.name)
     # get datasource name and uid for InfluxDB
     gf.initDataSource(InDB.name, InDB.bucket)
-    # Add Dashboard for Overlay Stuff
-    db_overlay = gf.dashboard('Overlay',gf.getFolderUID(config['General']['Name_Infra']), 'Overlay')
-    gf.addDashboard(db_overlay)
-    # Add Dashboard for Overlay Stuff
-    db_security = gf.dashboard('Security',gf.getFolderUID(config['General']['Name_Infra']), 'Security')
-    gf.addDashboard(db_security)    
-    # Create Dashboard for each type of component
-    for tn in ListTN:
-        if len(tn.cmd) > 0:
-            # Check if dashboard doesn't exist un grafana
-            dash_exist = False
-            for dash in gf.dashboards:
-                if dash.type == tn.type:
-                    dash_exist = True
-            # Create Dashboard Object for NSX Manager
-            if tn.type == 'Manager': 
-                if not dash_exist:
-                    dash = gf.dashboard('NSX Managers',gf.getFolderUID(config['General']['Name_Infra']), tn.type)
-                    gf.addDashboard(dash)
-                    tn.gf_dashboard = dash
-                else:
-                    tn.gf_dashboard = gf.getDashboard('NSX Managers')
-            # Create Dashboard Object for NSX Edge
-            if tn.type == 'EdgeNode':
-                if not dash_exist:
-                    dash =  gf.dashboard('Edge Nodes',gf.getFolderUID(config['General']['Name_Infra']), tn.type)
-                    gf.addDashboard(dash)
-                    tn.gf_dashboard = dash
-                else:
-                    tn.gf_dashboard = gf.getDashboard('Edge Nodes')
-            # Create Dashboard Object for ESXi
-            if tn.type == 'HostNode':
-                if not dash_exist:
-                    dash = gf.dashboard('Hosts',gf.getFolderUID(config['General']['Name_Infra']), tn.type)
-                    gf.addDashboard(dash)
-                    tn.gf_dashboard = dash
-                else:
-                    tn.gf_dashboard = gf.getDashboard('Hosts')
-
-
-    # create panel for each TN
-    for tn in ListTN:
-        if tn.gf_dashboard is not None:
-            # Loop inside all dashboards
-            for db in gf.dashboards:
-                if db == tn.gf_dashboard:
-                    # Loop in all commands
-                    for cmd in tn.cmd:
-                        result = {}
-                        # dual command process
-                        if isinstance(cmd, list):
-                            # get the first result of the command
-                            for cd in cmd:
-                                result = result | connection.sendCommand(tn, cd)
-
-                            function_name = globals()[cmd[0].panel_function]
-                            dash = function_name(tn, db, gf, result)
-
-                        # one command process
-                        else:
-                            result = connection.sendCommand(tn, cmd)
-                            # Call format function of a call
-                            function_name = globals()[cmd.panel_function]
-                            dash = function_name(tn, db, gf, result)
+    # Create Dashboards from config file
+    for db in config['Grafana']['Dashboards']:
+        dash = gf.dashboard(db['name'],gf.getFolderUID(config['General']['Name_Infra']))
+        gf.addDashboard(dash)
+        for pn in db['panels']:
+            function_name = globals()[pn['panelfunction']]
+            dash = function_name(pn['name'], pn['type'], infra, dash, gf)
 
     # Apply all Dashboards
     for db in gf.dashboards:

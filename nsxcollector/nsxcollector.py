@@ -16,107 +16,40 @@
 # 0.1: Version initiale
 
 import schedule, time, threading, sys, logging, argparse
-from lib import tools, color, connection, influxdb, discovery, grafana, transportnodes
-# from fabric import Connection, ThreadingGroup
-from threading import current_thread
-import numpy as np
+from lib import tools, color, connection, influxdb, discovery, grafana
+# from threading import current_thread
+from collections import defaultdict
 
-def collectData(elementlist,type_thread, inDB):
+def collectData(infra, elementlist,inDB):
     # Test what kind of threading
-    if type_thread == 'GlobalCommands' or type_thread == 'PollingCommands':
-        for item in elementlist:
-            if item.type == 'API':
-                for node in item.tn: 
-                    result = connection.sendCommand(node,item)
-                    inDB.influxWrite(node.ip_mgmt,item, result)
+    for item in elementlist:
+        result_json, code = connection.GetAPIGeneric(infra.url_api + item.call, infra.cluster.members[0].login, infra.cluster.members[0].password)
+        inDB.influxWrite(item, result_json)
 
-            else:
-                if len(item.tn) > 1:
-                    for node in item.tn: 
-                        result = connection.sendCommand(node,item)
-                        inDB.influxWrite(node.ip_mgmt,item, result )
-
-                else:
-                    result = connection.sendCommand(item.tn[0],item)
-                    inDB.influxWrite(item[0].ip_mgmt, item, result)
-
-
-    if type_thread == 'Node':
-        SSHnodes = transportnodes.getComponentbyType('EdgeNode', elementlist)
-        APInodes = transportnodes.getComponentbyType('Manager', elementlist)
-        # Passing command to API nodes
-        for apinode in APInodes:
-            for cmd in apinode.cmd:
-                if isinstance(cmd, list):
-                    for call in cmd:
-                        result = connection.sendCommand(apinode,call)
-                        inDB.influxWrite(apinode.ip_mgmt,call, result)
-                else:
-                    result = connection.sendCommand(apinode,cmd)
-                    inDB.influxWrite(apinode.ip_mgmt,cmd, result)
-
-        # Passing commands to SSH nodes
-        for cmd in SSHnodes[0].cmd:
-            results = connection.sendCommand(SSHnodes[0],cmd, SSHnodes)
-            for i in results:
-                inDB.influxWrite(i['host'],i['cmd'], i['result'])
         
-def run_threaded(job_func, listelement, type_thread, index, inDB):
+def run_threaded(job_func, infra, listelement, index, inDB):
     # Create a thread
-    logging.info(listelement)
-    job_thread = threading.Thread(name=type_thread + ' Thread_' + str(index), target=job_func, args=(listelement,type_thread,inDB,))
+    job_thread = threading.Thread(name='Thread_' + str(index), target=job_func, args=(infra, listelement,inDB,))
     job_thread.start()
 
-def createSchedule(thread_config, List, inDB):
+def createSchedule(infra, List, inDB):
 
-    if thread_config['type'] == 'Node' or thread_config['type'] == 'GlobalCommands':
-        threading_interval = thread_config['polling']
-
+    Num_Max_Thread = 16
     # Global Thread configuration 
-    print(color.style.RED + "-- ==> Type of threading: " + color.style.NORMAL + thread_config['type'])
-    print(color.style.RED + "-- ==> Nb of asking threads : " + color.style.NORMAL + str(thread_config['nb_thread']))
+    print(color.style.RED + "==> Total number of commands: " + color.style.NORMAL + str(len(List)))
+    polling_groups = defaultdict(list)
+    # Create list based on polling value
+    for cmd in List:
+        polling_groups[cmd.polling].append(cmd)
 
-    # Elements less than thread => only one thread
-    if len(List) < thread_config['nb_thread']:
-        print(color.style.RED + "-- ==> Found " + color.style.NORMAL + str(len(List)) + " elements - Create only one Thread")
-        if thread_config['type'] == 'PollingCommands':
-            threading_interval = List[0][0].polling
-        schedule.every(threading_interval).seconds.do(run_threaded, collectData, listelement=List, type_thread=thread_config['type'] ,index=1, inDB=inDB)
+    new_list = polling_groups.items()
+    print(color.style.RED + "==> Total of polling interval: " + color.style.NORMAL + str(len(new_list)))
+    if len(new_list) <= Num_Max_Thread:
+        for key, value in new_list:
+            schedule.every(key).seconds.do(run_threaded, collectData, infra=infra, listelement=value, index=key, inDB=inDB)
 
-    # Nb of Elements between nb thread and the max (max = 16) 
-    elif len(List) >= thread_config['nb_thread'] and len(List) <= 16:
-        nb_thread = thread_config['nb_thread']
-        elementperthread = len(List) / thread_config['nb_thread']
-        index = 1
-        print(color.style.RED + "-- ==> Found " + color.style.NORMAL + str(len(List)) + " elements - Creating " + str(nb_thread) +  " Thread(s)")
-        if thread_config['type'] == 'PollingCommands':
-            for element in List:
-                print(color.style.RED + "-- ==> Creating Thread of " + color.style.NORMAL + str(len(element)) + " element(s)")
-                schedule.every(element[0].polling).seconds.do(run_threaded, collectData, listelement=element, type_thread=thread_config['type'], index=element[0].polling, inDB=inDB)
-        else:
-            splits = np.array_split(List,nb_thread)
-            for array in splits:
-                print(color.style.RED + "-- ==> Creating Thread of " + color.style.NORMAL + str(len(array)) + " element(s)")
-                schedule.every(threading_interval).seconds.do(run_threaded, collectData, listelement=array, type_thread=thread_config['type'], index=index, inDB=inDB)
-                index += 1
-
-    # Elements upper thread => create number of thread in config file - MAX Thread = 16
-    elif len(List) >= 16:
-        nb_thread == 16
-        print(color.style.RED + "-- ==> Found " + color.style.NORMAL + str(len(List)) + " elements - Maximum thread reach - Create " + str(nb_thread) +  " Thread(s) of " + str(int(elementperthread)) + " " + thread_config['type'] + "(s)")
-        if thread_config['type'] == 'PollingCommands':
-            splits = np.array_split(List,nb_thread)
-            for element in splits:
-                print(color.style.RED + "-- ==> Creating Thread of " + color.style.NORMAL + str(len(element)) + " element(s)")
-                schedule.every(element[0].polling).seconds.do(run_threaded, collectData, listelement=element, type_thread=thread_config['type'], index=element[0].polling, inDB=inDB)
-        else:
-            splits = np.array_split(List,nb_thread)
-            for array in splits:
-                print(color.style.RED + "-- ==> Creating Thread of " + color.style.NORMAL + str(len(array)) + " element(s)")
-                schedule.every(threading_interval).seconds.do(run_threaded, collectData, listelement=array, type_thread=thread_config['type'], index=index, inDB=inDB)
-                index += 1      
     else:
-        print(color.style.RED + "ERROR: " + color.style.NORMAL + "Thread configuration issue")
+        print(color.style.RED + "==> Maximum thread reach: " + color.style.NORMAL + " please reorganize your commands to have maximum 16 polling intervals")
         sys.exit()
 
 
@@ -148,27 +81,20 @@ def main():
     gf = grafana.grafana(grafanaHost, dictenv['GRAFANA_PORT'], dictenv['GRAFANA_ADMIN_USER'], dictenv['GRAFANA_ADMIN_PASSWORD'])
     gf.testGrafana()
     # Connect to NSX and Get Transport Nodes: Create List of Nodes and Commands
-    ListTN, ListAllCmds = discovery.discovery(config)
+    infra = discovery.discovery(config)
     # Create Grafana Environment (Folder + Dashboard + Panels)
-    grafana.createGrafanaEnv(args, config, gf, inDB, ListTN)
-    # Test all commands, and create grafana panels associated
+    grafana.createGrafanaEnv(args, config, gf, inDB, infra)
+
     try:
-        # check type of thread
-        # Create Thread depend on type of thread
-        if config['Thread']['type'] == 'GlobalCommands':
-            createSchedule(config['Thread'], ListAllCmds, inDB)
-        if config['Thread']['type'] == 'Node':
-            createSchedule(config['Thread'], ListTN, inDB)
-        if config['Thread']['type'] == 'PollingCommands':
-            ListPollingCmds = discovery.getCommandListbyPooling(ListAllCmds)
-            createSchedule(config['Thread'], ListPollingCmds, inDB)
+        AllCommands = infra.getCommandsPolling()
+        createSchedule(infra, AllCommands, inDB)
         # Start thread
         while True:
             schedule.run_pending()
             time.sleep(1)
-
     except Exception as error:
         print(color.style.RED + "ERROR: " + color.style.NORMAL + str(error))
+    
 
 if __name__ == "__main__":
     main()

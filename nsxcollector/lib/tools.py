@@ -6,6 +6,27 @@ from lib import color
 from dotenv.main import dotenv_values
 # from jinja2 import PackageLoader
 
+
+def json_extract(obj, key):
+    """Recursively fetch values from nested JSON."""
+    arr = []
+
+    def extract(obj, arr, key):
+        """Recursively search for values of key in JSON tree."""
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, (dict, list)):
+                    extract(v, arr, key)
+                elif k == key:
+                    arr.append(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                extract(item, arr, key)
+        return arr
+
+    values = extract(obj, arr, key)
+    return values
+
 def renderPanel(panelname, parameters):
     """
     Read a YAML File and return Dictionnary
@@ -49,20 +70,11 @@ def readYML(YAML_CFG_FILE):
     try:
         with open(YAML_CFG_FILE, 'r') as ymlfile:
             YAML_DICT = yaml.load(ymlfile, Loader=yaml.FullLoader)
-            if len(YAML_DICT['Thread']) < 3:
-                print(color.style.RED + YAML_CFG_FILE + ": error - missing information in section: Thread" + color.style.NORMAL)
-                sys.exit(1)
             if len(YAML_DICT['Component']) == 0:
                 print(color.style.RED + YAML_CFG_FILE + ": error - no components in section: Component" + color.style.NORMAL)
                 sys.exit(1)
             # Check if YAML file is good.
             for key, value in YAML_DICT.items():
-                # Check Thread Section
-                if key == 'Thread':
-                    if value['type'] == '' or value['nb_thread'] == '' or value['polling'] == '':
-                        print(color.style.RED + YAML_CFG_FILE + ": error - empty value in section: " + key + color.style.NORMAL)
-                        sys.exit(1)
-
                 # Check Component Section
                 if key == 'Component':
                     for tp, node in YAML_DICT['Component'].items():

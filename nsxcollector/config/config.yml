@@ -1,28 +1,93 @@
 General:
-  Name_Infra: "Lab Yann"
-  ssh_timeout: 5
-  api_timeout: 5
+  Name_Infra: "Lab Yann2"
+  api_timeout: 10
 
 
-Thread:
-  # 3 type of thread : GlobalCommands, PollingCommands or Node
-  # if PollingCommand is used, the polling parameter in Thread will not be used.
-  # only polling value of each commands
-  type: Node # GlobalCommands, PollingCommands or Node
-  nb_thread: 2
-  polling : 30
+Grafana:
+  Dashboards:
+    -
+      name: 'NSX Managers'
+      panels:
+        -
+          name: 'NSX Manager Status'
+          panelfunction : "simplePanel"
+          type: 'stat'
+        -
+          name: 'NSX Services Status'
+          panelfunction : "simplePanel"
+          type: 'table'
+    -
+      name: 'Edge Nodes'
+      panels: []
+    -
+      name: 'Transport Nodes'
+      panels: []
+    - 
+      name: 'Overlay'
+      panels: []
+    -
+      name: 'Security'
+      panels: []
+
+
+Monitoring_calls:
+# Segments calls
+    segments: 
+      call: '/policy/api/v1/infra/segments'
+      polling: 10
+# Tier 0 calls
+    t0: 
+      call: '/policy/api/v1/infra/tier-0s'
+      polling: 10
+    t0_localservice:
+      call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services'
+      polling: 10
+    t0_interfaces:
+      call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services/LSID/interfaces'
+      polling: 10
+    t0_interfaces_stats: 
+      call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services/LSID/interfaces/INTID/statistics'
+      polling: 10
+# Tier 1 calls
+    t1: 
+      call: '/policy/api/v1/infra/tier-1s'
+      polling: 10
+    t1_localservice: 
+      call: '/policy/api/v1/infra/tier-1s/RTRID/locale-services'
+      polling: 10
+    t1_interfaces: 
+      call: '/policy/api/v1/infra/tier-1s/RTRID/locale-services/LSID/interfaces'
+      polling: 10
+    t1_interfaces_stats: 
+      call: '/policy/api/v1/infra/tier-1s/RTRID/locale-services/LSID/interfaces/INTID/statistics'
+      polling: 10
+# Transport nodes calls
+    transport_nodes: 
+      call: '/api/v1/transport-nodes'
+      polling: 10
+    tn_interfaces: 
+      call: '/api/v1/transport-nodes/TNID/network/interfaces?source=realtime'
+      polling: 10
+    tn_interfaces_stats: 
+      call: '/api/v1/transport-nodes/TNID/network/interfaces/INTID/stats?source=realtime'
+      polling: 10
+    tn_status: 
+      call: /api/v1/transport-nodes/TNID/status
+      polling: 10
+# NSX Manager calls
+    nsx_cluster_status: 
+      call: /api/v1/cluster/status
+      polling: 30
+      influxdbfunction : "cluster_status_data"
+    nsx_cluster_backup: 
+      call: /policy/api/v1/cluster/backups/overview
+      polling: 15
+      influxdbfunction : "cluster_status_data"
+
 
 # Component of NSX Infrastructure
 # Component have 3 types : Manager, EdgeNode, HostNode
 Component:
-  # vCenter:
-  #   fqdn: '192.168.40.1'
-  #   port: '' 
-  #   login: administrato@vsphere.local
-  #   password: 'VMware1!'
-  #   type: 'vCenter'
-  #   commands: []
-
   Manager:
     fqdn: '10.168.165.188'
     port: '' 
@@ -34,21 +99,21 @@ Component:
     # password: 'VMware1!VMware1!'
     type: 'Manager'
     # Command can have 2 types : API or SSH
-    commands:
-      -
-        name: 'Manager CPU Process'
-        type: 'API'
-        call: ['/api/v1/systemhealth/appliances/process/status']
-        datafunction: 'Manager_CPU_Process_Data'
-        panelfunction: 'Manager_CPU_Process_Panel'
-        polling: 30
-      -
-        name: 'Manager Cluster'
-        type: 'API'
-        call: ['/api/v1/cluster/status', '/policy/api/v1/cluster/backups/overview']
-        datafunction: 'Manager_Cluster_Data'
-        panelfunction: 'Manager_Cluster_Panel'
-        polling: 15
+    # commands:
+    #   -
+    #     name: 'Manager CPU Process'
+    #     type: 'API'
+    #     call: ['/api/v1/systemhealth/appliances/process/status']
+    #     datafunction: 'Manager_CPU_Process_Data'
+    #     panelfunction: 'Manager_CPU_Process_Panel'
+    #     polling: 30
+    #   -
+    #     name: 'Manager Cluster'
+    #     type: 'API'
+    #     call: ['/api/v1/cluster/status', '/policy/api/v1/cluster/backups/overview']
+    #     datafunction: 'Manager_Cluster_Data'
+    #     panelfunction: 'Manager_Cluster_Panel'
+    #     polling: 15
       # -
       #   name: 'Status Transport Nodes'
       #   type: 'API'
@@ -56,8 +121,6 @@ Component:
       #   datafunction: 'TN_Status_Data'
       #   panelfunction: 'TN_Status_Panel'
       #   polling: 15
-
-
 
   Edge:
     login: 'admin'
@@ -78,11 +141,3 @@ Component:
         datafunction: 'Edge_CPU_Data'
         panelfunction: 'Edge_CPU_Panel'
         polling: 10
-
-
-  Host:
-    login: 'root'
-    password: 'Admin!23Admin'
-    type: 'HostNode'
-    commands: []
-

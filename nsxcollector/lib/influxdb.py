@@ -3,8 +3,9 @@
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
 from lib import color
-import sys, logging
+import logging
 from lib.formatDatas import Edge_Int_Data, Manager_CPU_Process_Data, Manager_Cluster_Data, Edge_CPU_Data
+from threading import current_thread
 
 class influxdb:
     api = None
@@ -20,11 +21,6 @@ class influxdb:
         """
         influxConnection()
         Connecting test to influxDB
-
-        Args
-        ----------
-        dictenv (dict): environment object
-        args (obj): agrument object
         """
         influxurl = "http://" + self.host + ":" + self.port
         # Connect to InfluxDB
@@ -43,25 +39,61 @@ class influxdb:
 
         print(color.style.RED + "==> " + color.style.NORMAL + "Connection to InfluxDB: "  + color.style.GREEN + "Established" + color.style.NORMAL)
 
-    def influxWrite(self, tn, cmd, json):
+    def influxWrite(self, cmd, json):
         """
-        influxWrite(tn , cmd, result)
         Format and write result of a json to influxdb
 
         Args
         ----------
-        tn : ip of TN
         cmd : Commands Object
         json: result of the command
         """
-        logging.debug("Format Data for writing in Inflxdb")
-        logging.info("Format Data for writing in Inflxdb")
-        function_name = globals()[cmd.format_function]
-        format_data = function_name(tn, json)
+        logging.debug(current_thread().name + ": Format Data for writing in Inflxdb")
+        logging.info(current_thread().name + ": Format Data for writing in Inflxdb")
+        function_name = globals()[cmd.influxdbfunction]
+        format_data = function_name(cmd.node, json)
         try:
-            logging.debug("Writing Data on Influxdb: " + ', '.join(format_data))
-            logging.info("Writing Data on Influxdb: " + ', '.join(format_data))
+            logging.debug(current_thread().name + ": Writing Data on Influxdb: " + ', '.join(format_data))
+            logging.info(current_thread().name + ": Writing Data on Influxdb: " + ', '.join(format_data))
             self.api.write(self.bucket, self.org, format_data)
         except Exception as esx:
             print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error while writing to InfluxDB")
             logging.info(esx)
+
+
+def cluster_status_data(nsx_object, json):
+    # Format result of call api /api/v1/cluster/status
+    Tab_result = []
+    # Value for Control Cluster STATUS
+    if isinstance(json, dict) and 'control_cluster_status' in json:
+        status = "CC-Status,cluster="+nsx_object.id+" status=\""+ json["control_cluster_status"]["status"]+"\""
+        Tab_result.append(status)
+    # Value for Management Cluster STATUS & Management Cluster Number nodes UP
+    if isinstance(json, dict) and 'mgmt_cluster_status' in json:
+        status = "MC-Status,cluster="+nsx_object.id+" status=\""+ json["mgmt_cluster_status"]["status"]+"\""
+        Tab_result.append(status)
+        nodes_up = "MC-Nodes,cluster="+nsx_object.id+" UP="+ str(len(json["mgmt_cluster_status"]["online_nodes"])) + ",DOWN="+str(len(json["mgmt_cluster_status"]["offline_nodes"]))
+        Tab_result.append(nodes_up)
+    # Value for Backup enabled
+    if isinstance(json, dict) and 'backup_enabled' in json:
+        status = "BKP-Config,host="+nsx_object.id+" enabled="+str(json["backup_enabled"])
+        Tab_result.append(status)
+    # Value for Backup scheduled
+    if isinstance(json, dict) and 'backup_schedule' in json:
+        status = "BKP-Config,host="+nsx_object.id+" schedule=\""+json["backup_schedule"]["resource_type"]+"\""
+        Tab_result.append(status)
+    # Value for Last backup
+    if isinstance(json, dict) and 'cluster_backup_statuses' in json and len(json["cluster_backup_statuses"])>0:
+        status = "BKP-LastStatus,host="+nsx_object.id+" status="+str(json["cluster_backup_statuses"][0]["success"])
+        Tab_result.append(status)
+    else:
+        status = "BKP-LastStatus,host="+nsx_object.id+" status=False"
+        Tab_result.append(status)
+    # Process
+    if isinstance(json, dict) and 'detailed_cluster_status' in json:
+        for group in json['detailed_cluster_status']['groups']:
+            for member in group['members']:
+                status = group['group_type'] + ",host=" + member['member_ip'] + " STATE=\""+ group['group_status'] +"\""
+                Tab_result.append(status)
+    
+    return Tab_result
