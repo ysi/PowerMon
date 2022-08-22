@@ -100,8 +100,7 @@ def cluster_status_data(nsx_object, json):
 
 
 def t0_int_stats_data(nsx_object, json):
-    print(nsx_object.__dict__)
-    print(json)
-    Tab_result = []
+    # get router name
+    RTRName = json['logical_router_port_id'].split('/')[2]
+    return ["Bandwidth,T0router=" + RTRName + ",interface=" + nsx_object.name + " rx=" + str(json['per_node_statistics'][0]['rx']['total_bytes']) + ",tx=" + str(json['per_node_statistics'][0]['tx']['total_bytes'])]
 
-    return Tab_result

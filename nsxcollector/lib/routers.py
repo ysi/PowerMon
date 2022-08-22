@@ -59,7 +59,7 @@ class Router:
                 interface.type = it['type']
                 interface.resource_type = it['resource_type']
                 interface.uuid = it['unique_id']
-                call_int['call'] = call_int['call'].replace('RTRID', self.unique_id).replace('INTID', it['id']).replace('LSID', self.localservice)
+                call_int['call'] = call_int['call'].replace('RTRID', self.id).replace('INTID', it['id']).replace('LSID', self.localservice)
                 interface.call = commands.cmd('int_stats_call',call_int, interface, timeout)
 
                 if interface not in self.interfaces:

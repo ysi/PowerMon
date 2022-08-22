@@ -113,7 +113,7 @@ def discovery(config):
                 rtrT0.failover_mode = t0['failover_mode']
                 config['Monitoring_calls']['t0']
                 rtrT0_config = config['Monitoring_calls']['t0']
-                rtrT0_config['call'] = rtrT0_config['call'] + '/' + t0['display_name']
+                rtrT0_config['call'] = rtrT0_config['call'] + '/' + t0['id']
                 rtrT0.getLocalService(url,config['Monitoring_calls']['t0_localservice']['call'],config['Component']['Manager']['login'], config['Component']['Manager']['password'])
                 rtrT0.discoverInterfaces(config['Monitoring_calls']['t0_interfaces']['call'], config['Monitoring_calls']['t0_interfaces_stats'],url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
                 rtrT0.call = commands.cmd('t0_call',rtrT0_config, rtrT0, config['General']['api_timeout'])
@@ -129,7 +129,7 @@ def discovery(config):
                 rtrT1.type = t1['resource_type']
                 rtrT1.failover_mode = t1['failover_mode']
                 rtrT1_config = config['Monitoring_calls']['t1']
-                rtrT1_config['call'] = rtrT1_config['call'] + '/' + t1['display_name']
+                rtrT1_config['call'] = rtrT1_config['call'] + '/' + t1['id']
                 rtrT1.getLocalService(url,config['Monitoring_calls']['t1_localservice']['call'],config['Component']['Manager']['login'], config['Component']['Manager']['password'])
                 rtrT1.discoverInterfaces(config['Monitoring_calls']['t1_interfaces']['call'], config['Monitoring_calls']['t1_interfaces_stats'],url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
                 rtrT1.call = commands.cmd('t1_call',rtrT1_config, rtrT1, config['General']['api_timeout'])

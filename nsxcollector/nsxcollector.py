@@ -27,7 +27,10 @@ def collectData(infra, elementlist,inDB):
     # Test what kind of threading
     for item in elementlist:
         result_json, code = connection.GetAPIGeneric(infra.url_api + item.call, infra.cluster.members[0].login, infra.cluster.members[0].password)
-        inDB.influxWrite(item, result_json)
+        if code == 200:
+            inDB.influxWrite(item, result_json)
+        else:
+            print(color.style.RED + "ERROR HTTP ==> " + str(code) + color.style.NORMAL + " : error accessing to " + infra.url_api + item.call)
 
         
 def run_threaded(job_func, infra, listelement, index, inDB):
@@ -92,10 +95,8 @@ def main():
     infra = discovery.discovery(config)
     # Create Grafana Environment (Folder + Dashboard + Panels)
     grafana.createGrafanaEnv(args, config, gf, inDB, infra)
-    infra.viewInfra()
     try:
         AllCommands = infra.getCommandsPolling()
-        print(AllCommands)
         createSchedule(infra, AllCommands, inDB)
         # Start thread
         while True:
