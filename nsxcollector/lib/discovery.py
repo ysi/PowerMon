@@ -93,12 +93,16 @@ def discovery(config):
                 config_call['call'] = config_call['call'] + '/' + node['node_id']
                 tn.ip_mgmt = node['node_deployment_info']['ip_addresses'][0]
                 tn.type = node['node_deployment_info']['resource_type']
-                tnstatus_config_call = config['Monitoring_calls']['tn_status']
-                tnstatus_config_call['call'] = tnstatus_config_call['call'].replace('TNID',node['node_id'])
                 tn_int_call = config['Monitoring_calls']['tn_interfaces']['call'].replace('TNID', tn.uuid)
-                tn.discoverInterfaces(tn_int_call, config['Monitoring_calls']['tn_interfaces_stats'],url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
-                tn.call = commands.cmd('tn_status_call',config_call, tn, config['General']['api_timeout'])
-                tn.tn_status_call = commands.cmd('tn_status_call',tnstatus_config_call, tn, config['General']['api_timeout'])
+                TN_config = {
+                    'call': config['Monitoring_calls']['tn_status']['call'].replace('TNID', node['node_id']),
+                    'polling': config['Monitoring_calls']['tn_interfaces']['polling']
+                }
+                tn.call = commands.cmd('tn_status_call',TN_config, tn, config['General']['api_timeout'])
+                int_stats = dict(config['Monitoring_calls']['tn_interfaces_stats'])
+
+                tn.discoverInterfaces(tn_int_call, int_stats,url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
+                tn.tn_status_call = commands.cmd('tn_status_call',TN_config, tn, config['General']['api_timeout'])
                 infra.nodes.append(tn)
 
         # T0 discovery

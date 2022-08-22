@@ -47,8 +47,6 @@ class influxdb:
         cmd : Commands Object
         json: result of the command
         """
-        logging.debug(current_thread().name + ": Format Data for writing in Inflxdb")
-        logging.info(current_thread().name + ": Format Data for writing in Inflxdb")
         function_name = globals()[cmd.influxdbfunction]
         format_data = function_name(cmd.node, json)
         try:
@@ -100,6 +98,8 @@ def cluster_status_data(nsx_object, json):
 
 def t0_int_stats_data(nsx_object, json):
     # get router name
-    RTRName = json['logical_router_port_id'].split('/')[3]
-    return ["Bandwidth,T0router=" + RTRName + ",interface=" + nsx_object.name + " rx=" + str(json['per_node_statistics'][0]['rx']['total_bytes']) + ",tx=" + str(json['per_node_statistics'][0]['tx']['total_bytes'])]
+    return ["Bandwidth," + nsx_object.node_type + "=" + nsx_object.node_name + ",interface=" + nsx_object.name + " rx=" + str(json['per_node_statistics'][0]['rx']['total_bytes']) + ",tx=" + str(json['per_node_statistics'][0]['tx']['total_bytes'])]
 
+
+def tn_int_stats_data(nsx_object, json):
+    return ["Bandwidth," + nsx_object.node_type + "=" + nsx_object.node_name + ",interface=" + json['interface_id'] + " rx=" + str(json['rx_bytes']) + ",tx=" + str(json['tx_bytes'])]

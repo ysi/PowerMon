@@ -1,6 +1,6 @@
 #!/opt/homebrew/bin/python3
 from lib import connection, color
-from lib.panels import simplePanel, Edge_Int_Panel
+from lib.panels import simplePanel, Edge_Int_Panel, Nodes_Int_Panel
 import sys, logging
 
 
@@ -215,7 +215,7 @@ def createGrafanaEnv(args, config, gf, InDB, infra):
         gf.addDashboard(dash)
         for pn in db['panels']:
             function_name = globals()[pn['panelfunction']]
-            dash = function_name(pn['name'], pn['type'], infra, dash, gf)
+            dash = function_name(pn['name'], pn['type'], pn['template'], infra, dash, gf)
 
     # Apply all Dashboards
     for db in gf.dashboards:

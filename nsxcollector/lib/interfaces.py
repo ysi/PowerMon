@@ -10,6 +10,8 @@ class Interface:
     call = ""
     type = ""
     resource_type = ""
+    node_name = ""
+    node_type = ""
     
     def __init__(self, name):
         self.name = name
@@ -24,4 +26,6 @@ class Interface:
         print('     - connected_switch_type: ' + self.connected_switch_type)
         print('     - type: ' + self.type)
         print('     - ressource_type: ' + self.resource_type)
+        print('     - node_name: ' + self.node_name)
+        print('     - node_type: ' + self.node_type)
         self.call.viewCommand()

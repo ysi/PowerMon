@@ -34,7 +34,7 @@ class TN:
         self.tn_status_call.viewCommand()
         
 
-    def discoverInterfaces(self, call_node, call_int, manager_url, login, password, timeout):
+    def discoverInterfaces(self, call_node, call_stats, manager_url, login, password, timeout):
         """
         discover interfaces in a Node
         Args
@@ -53,8 +53,10 @@ class TN:
                         interface.admin_status = it['admin_status']
                         interface.link_status = it['link_status']
                         interface.mtu = it['mtu']
-                        call_int['call'] = call_int['call'].replace('TNID', self.uuid).replace('INTID', it['interface_id'])
-                        interface.call = commands.cmd('int_stats_call',call_int, interface, timeout)
+                        interface.node_name = self.name
+                        interface.node_type = self.type
+                        call_stats['call'] = call_stats['call'].replace('TNID', self.uuid).replace('INTID', it['interface_id'])
+                        interface.call = commands.cmd('int_stats_call',call_stats, interface, timeout)
 
                         if 'interface_type' in it: interface.interface_type = it['interface_type']
                         if 'interface_uuid' in it: interface.uuid = it['interface_uuid']

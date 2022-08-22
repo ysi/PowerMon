@@ -27,20 +27,15 @@ def json_extract(obj, key):
     values = extract(obj, arr, key)
     return values
 
-def renderPanel(panelname, parameters):
+def renderPanel(templatename, parameters):
     """
-    Read a YAML File and return Dictionnary
-    Returns
-    ----------
-    grafana json of the panel
+    Render panel from template j2 file
     Parameters
     ----------
-    panelname (str): Name of the panel
+    templatename (str): Name of the panel
     parameters Name of YAML file
     """
-    tmp = panelname.replace(" ","-")
-    panelname = tmp.lower()
-    template_file = panelname + ".j2"
+    template_file = templatename + ".j2"
     try:
         templateLoader = jinja2.FileSystemLoader(searchpath="./grafana")
         templateEnv = jinja2.Environment(loader=templateLoader, trim_blocks=True, lstrip_blocks=True)

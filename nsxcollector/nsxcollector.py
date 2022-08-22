@@ -93,6 +93,7 @@ def main():
     gf.testGrafana()
     # Connect to NSX and Get Transport Nodes: Create List of Nodes and Commands
     infra = discovery.discovery(config)
+    infra.viewInfra()
     # Create Grafana Environment (Folder + Dashboard + Panels)
     grafana.createGrafanaEnv(args, config, gf, inDB, infra)
     try:

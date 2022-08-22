@@ -57,6 +57,8 @@ class Router:
             for it in rtr_int_json['results']:
                 interface = interfaces.Interface(it['display_name'])
                 interface.type = it['type']
+                interface.node_name = self.id
+                interface.node_type = self.type
                 interface.resource_type = it['resource_type']
                 interface.uuid = it['unique_id']
                 call_stats['call'] = call_stats['call'].replace('RTRID', self.id).replace('INTID', it['id']).replace('LSID', self.localservice)

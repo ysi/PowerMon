@@ -3,6 +3,15 @@ General:
   api_timeout: 10
 
 
+# Component of NSX Infrastructure
+Component:
+  Manager:
+    fqdn: '10.168.165.188'
+    port: '' 
+    login: admin
+    password: 'Admin!23Admin'
+    type: 'Manager'
+
 Grafana:
   Dashboards:
     -
@@ -12,10 +21,12 @@ Grafana:
           name: 'NSX Manager Status'
           panelfunction : "simplePanel"
           type: 'stat'
+          template: 'nsx-manager-status'
         -
           name: 'NSX Services Status'
           panelfunction : "simplePanel"
           type: 'table'
+          template: 'nsx-services-status'
     -
       name: 'Edge Nodes'
       panels:
@@ -23,9 +34,15 @@ Grafana:
           name: 'Edge interfaces stats'
           panelfunction : "Edge_Int_Panel"
           type: 'timeseries'
+          template: 'interfaces-stats'
     -
       name: 'Transport Nodes'
-      panels: []
+      panels:
+        -
+          name: 'Nodes interfaces stats'
+          panelfunction : "Nodes_Int_Panel"
+          type: 'timeseries'
+          template: 'interfaces-stats'
     - 
       name: 'Overlay'
       panels: []
@@ -76,6 +93,7 @@ Monitoring_calls:
     tn_interfaces_stats: 
       call: '/api/v1/transport-nodes/TNID/network/interfaces/INTID/stats?source=realtime'
       polling: 10
+      influxdbfunction: "tn_int_stats_data"
     tn_status: 
       call: /api/v1/transport-nodes/TNID/status
       polling: 10
@@ -89,60 +107,3 @@ Monitoring_calls:
       polling: 15
       influxdbfunction : "cluster_status_data"
 
-
-# Component of NSX Infrastructure
-# Component have 3 types : Manager, EdgeNode, HostNode
-Component:
-  Manager:
-    fqdn: '10.168.165.188'
-    port: '' 
-    login: admin
-    password: 'Admin!23Admin'
-    # fqdn: 'localhost'
-    # port: '21443' 
-    # login: admin
-    # password: 'VMware1!VMware1!'
-    type: 'Manager'
-    # Command can have 2 types : API or SSH
-    # commands:
-    #   -
-    #     name: 'Manager CPU Process'
-    #     type: 'API'
-    #     call: ['/api/v1/systemhealth/appliances/process/status']
-    #     datafunction: 'Manager_CPU_Process_Data'
-    #     panelfunction: 'Manager_CPU_Process_Panel'
-    #     polling: 30
-    #   -
-    #     name: 'Manager Cluster'
-    #     type: 'API'
-    #     call: ['/api/v1/cluster/status', '/policy/api/v1/cluster/backups/overview']
-    #     datafunction: 'Manager_Cluster_Data'
-    #     panelfunction: 'Manager_Cluster_Panel'
-    #     polling: 15
-      # -
-      #   name: 'Status Transport Nodes'
-      #   type: 'API'
-      #   call: ['/api/v1/transport-nodes/ID/status?source=realtime']
-      #   datafunction: 'TN_Status_Data'
-      #   panelfunction: 'TN_Status_Panel'
-      #   polling: 15
-
-  Edge:
-    login: 'admin'
-    password: 'Admin!23Admin'
-    type: 'EdgeNode'
-    commands:
-      # -
-      #   name: 'Interfaces Stats'
-      #   type: 'SSH'
-      #   call: ['get logical-routers', 'get logical-router ID interfaces stats']
-      #   datafunction: 'Edge_Int_Data'
-      #   panelfunction: 'Edge_Int_Panel'
-      #   polling: 10
-      -
-        name: 'Edges CPU'
-        type: 'SSH'
-        call: ['get cpu-stats']
-        datafunction: 'Edge_CPU_Data'
-        panelfunction: 'Edge_CPU_Panel'
-        polling: 10
