@@ -2,10 +2,6 @@
 
 class Interface:
     uuid = ""
-    rx = ""
-    tx = ""
-    rx_drop = ""
-    tx_drop = ""
     admin_status = ""
     link_status = ""
     mtu = ""
@@ -21,10 +17,6 @@ class Interface:
     def viewInterface(self):
         print(' - Interface ' + self.name)
         print('     - uuid: ' + self.uuid)
-        print('     - rx: ' + self.rx)
-        print('     - tx: ' + self.tx)
-        print('     - rx_drop: ' + self.rx_drop)
-        print('     - tx_drop: ' + self.tx_drop)
         print('     - admin_status: ' + self.admin_status)
         print('     - link_status: ' + self.link_status)
         print('     - mtu: ' + str(self.mtu))

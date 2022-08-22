@@ -1,6 +1,6 @@
 #!/opt/homebrew/bin/python3
 from lib import connection, color
-from lib.panels import simplePanel
+from lib.panels import simplePanel, Edge_Int_Panel
 import sys, logging
 
 

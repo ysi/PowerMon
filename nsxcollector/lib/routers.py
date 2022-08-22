@@ -42,7 +42,7 @@ class Router:
             for lc in local_json['results']:
                 self.localservice = lc['id']
 
-    def discoverInterfaces(self, call_router, call_int, manager_url, login, password, timeout):
+    def discoverInterfaces(self, call_router, call_stats, manager_url, login, password, timeout):
         """
         discover interfaces in a Router
         Args
@@ -59,9 +59,9 @@ class Router:
                 interface.type = it['type']
                 interface.resource_type = it['resource_type']
                 interface.uuid = it['unique_id']
-                call_int['call'] = call_int['call'].replace('RTRID', self.id).replace('INTID', it['id']).replace('LSID', self.localservice)
-                interface.call = commands.cmd('int_stats_call',call_int, interface, timeout)
+                call_stats['call'] = call_stats['call'].replace('RTRID', self.id).replace('INTID', it['id']).replace('LSID', self.localservice)
+                interface.call = commands.cmd('int_stats_call',call_stats, interface, timeout)
 
                 if interface not in self.interfaces:
-                    logging.info(color.style.RED + "-- ==> " + color.style.NORMAL + "Found interface " + it['id'] + " in " + self.name)
+                    logging.info(color.style.RED + "-- ==> " + color.style.NORMAL + "Found interface " + it['display_name'] + " in " + self.name)
                     self.interfaces.append(interface)

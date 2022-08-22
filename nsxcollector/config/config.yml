@@ -21,7 +21,7 @@ Grafana:
       panels:
         -
           name: 'Edge interfaces stats'
-          panelfunction : "simplePanel"
+          panelfunction : "Edge_Int_Panel"
           type: 'timeseries'
     -
       name: 'Transport Nodes'

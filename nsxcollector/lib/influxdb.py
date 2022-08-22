@@ -4,7 +4,6 @@ from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
 from lib import color
 import logging
-from lib.formatDatas import Edge_Int_Data, Manager_CPU_Process_Data, Manager_Cluster_Data, Edge_CPU_Data
 from threading import current_thread
 
 class influxdb:
@@ -101,6 +100,6 @@ def cluster_status_data(nsx_object, json):
 
 def t0_int_stats_data(nsx_object, json):
     # get router name
-    RTRName = json['logical_router_port_id'].split('/')[2]
+    RTRName = json['logical_router_port_id'].split('/')[3]
     return ["Bandwidth,T0router=" + RTRName + ",interface=" + nsx_object.name + " rx=" + str(json['per_node_statistics'][0]['rx']['total_bytes']) + ",tx=" + str(json['per_node_statistics'][0]['tx']['total_bytes'])]
 
