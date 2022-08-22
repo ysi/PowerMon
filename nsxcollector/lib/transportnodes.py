@@ -20,7 +20,7 @@ class TN:
     def getIntCommandsPolling(self):
         Tab_result = []
         for it in self.interfaces:
-            if it.call.usedforPolling: Tab_result.append(it)
+            if it.call.usedforPolling: Tab_result.append(it.call)
         return Tab_result
 
     def viewTN(self):
@@ -54,7 +54,7 @@ class TN:
                         interface.link_status = it['link_status']
                         interface.mtu = it['mtu']
                         call_int['call'] = call_int['call'].replace('TNID', self.uuid).replace('INTID', it['interface_id'])
-                        interface.call = commands.cmd('int_stats_call',call_int, self, timeout)
+                        interface.call = commands.cmd('int_stats_call',call_int, interface, timeout)
 
                         if 'interface_type' in it: interface.interface_type = it['interface_type']
                         if 'interface_uuid' in it: interface.uuid = it['interface_uuid']

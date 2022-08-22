@@ -97,3 +97,11 @@ def cluster_status_data(nsx_object, json):
                 Tab_result.append(status)
     
     return Tab_result
+
+
+def t0_int_stats_data(nsx_object, json):
+    print(nsx_object.__dict__)
+    print(json)
+    Tab_result = []
+
+    return Tab_result

@@ -32,4 +32,3 @@ class cmd:
         print('     - timeout: ' + str(self.timeout))
         print('     - Use for Polling: ' + str(self.usedforPolling))
         print('     - influxdbfunction: ' + self.influxdbfunction)
-        print('     - node: ' + self.node)

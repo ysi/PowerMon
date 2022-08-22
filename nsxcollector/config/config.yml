@@ -18,7 +18,11 @@ Grafana:
           type: 'table'
     -
       name: 'Edge Nodes'
-      panels: []
+      panels:
+        -
+          name: 'Edge interfaces stats'
+          panelfunction : "simplePanel"
+          type: 'timeseries'
     -
       name: 'Transport Nodes'
       panels: []
@@ -48,6 +52,7 @@ Monitoring_calls:
     t0_interfaces_stats: 
       call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services/LSID/interfaces/INTID/statistics'
       polling: 10
+      influxdbfunction: "t0_int_stats_data"
 # Tier 1 calls
     t1: 
       call: '/policy/api/v1/infra/tier-1s'

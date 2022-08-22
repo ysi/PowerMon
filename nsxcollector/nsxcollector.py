@@ -21,6 +21,9 @@ from lib import tools, color, connection, influxdb, discovery, grafana
 from collections import defaultdict
 
 def collectData(infra, elementlist,inDB):
+    """
+    Collect data from a list of cmd and write into influxdb
+    """
     # Test what kind of threading
     for item in elementlist:
         result_json, code = connection.GetAPIGeneric(infra.url_api + item.call, infra.cluster.members[0].login, infra.cluster.members[0].password)
@@ -28,12 +31,17 @@ def collectData(infra, elementlist,inDB):
 
         
 def run_threaded(job_func, infra, listelement, index, inDB):
+    """
+    Create and run thread
+    """
     # Create a thread
     job_thread = threading.Thread(name='Thread_' + str(index), target=job_func, args=(infra, listelement,inDB,))
     job_thread.start()
 
 def createSchedule(infra, List, inDB):
-
+    """
+    Create scheduling
+    """
     Num_Max_Thread = 16
     # Global Thread configuration 
     print(color.style.RED + "==> Total number of commands: " + color.style.NORMAL + str(len(List)))
@@ -84,9 +92,10 @@ def main():
     infra = discovery.discovery(config)
     # Create Grafana Environment (Folder + Dashboard + Panels)
     grafana.createGrafanaEnv(args, config, gf, inDB, infra)
-
+    infra.viewInfra()
     try:
         AllCommands = infra.getCommandsPolling()
+        print(AllCommands)
         createSchedule(infra, AllCommands, inDB)
         # Start thread
         while True:

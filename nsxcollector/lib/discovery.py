@@ -37,10 +37,10 @@ class nsx_infra:
         for seg in self.segments:
             if seg.call.usedforPolling: Tab_Result.append(call)
         # get commands in all T0 routers
-        for t0 in self.nodes:
+        for t0 in self.t0_routers:
             Tab_Result = Tab_Result + t0.getIntCommandsPolling()
         # get commands in all T1 routers
-        for t1 in self.nodes:
+        for t1 in self.t1_routers:
             Tab_Result = Tab_Result + t1.getIntCommandsPolling()
         
         return Tab_Result

@@ -19,7 +19,8 @@ class Router:
     def getIntCommandsPolling(self):
         Tab_result = []
         for it in self.interfaces:
-            if it.call.usedforPolling: Tab_result.append(it)
+            if it.call.usedforPolling: Tab_result.append(it.call)
+        
         return Tab_result
 
     def viewRouter(self):
@@ -59,7 +60,7 @@ class Router:
                 interface.resource_type = it['resource_type']
                 interface.uuid = it['unique_id']
                 call_int['call'] = call_int['call'].replace('RTRID', self.unique_id).replace('INTID', it['id']).replace('LSID', self.localservice)
-                interface.call = commands.cmd('int_stats_call',call_int, self, timeout)
+                interface.call = commands.cmd('int_stats_call',call_int, interface, timeout)
 
                 if interface not in self.interfaces:
                     logging.info(color.style.RED + "-- ==> " + color.style.NORMAL + "Found interface " + it['id'] + " in " + self.name)
