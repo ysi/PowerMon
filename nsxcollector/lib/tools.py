@@ -2,8 +2,10 @@
 
 from ast import expr_context
 import yaml, sys, json, logging, jinja2, os
-from lib import color
+from lib import color, tools
 from dotenv.main import dotenv_values
+
+from .influxdb import influxdb
 # from jinja2 import PackageLoader
 
 
@@ -144,3 +146,13 @@ def readENV(args):
 
     # Load .env file
 
+def copyConfigCall(configcall, TNID_str="", TNID="", LSID_str="", LSID="", INTID_str="", INTID=""):
+    call = configcall['call'].replace(TNID_str, TNID).replace(LSID_str, LSID).replace(INTID_str, INTID)
+    copycall = {
+        'call': call,
+        'polling': configcall['polling'],
+    }
+    # Add key only if it's present
+    if 'influxdbfunction' in configcall:
+        copycall['influxdbfunction'] = configcall['influxdbfunction']  
+    return copycall

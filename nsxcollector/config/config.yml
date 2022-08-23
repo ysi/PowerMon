@@ -45,7 +45,12 @@ Grafana:
           template: 'interfaces-stats'
     - 
       name: 'Overlay'
-      panels: []
+      panels:
+        -
+          name: 'BGP'
+          panelfunction : "dummyPanel"
+          type: 'table'
+          template: ''
     -
       name: 'Security'
       panels: []
@@ -70,6 +75,10 @@ Monitoring_calls:
       call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services/LSID/interfaces/INTID/statistics'
       polling: 10
       influxdbfunction: "t0_int_stats_data"
+    t0_bgp: 
+      call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services/LSID/bgp/neighbors/status?enforcement_point_path=/infra/sites/default/enforcement-points/default'
+      polling: 30
+      influxdbfunction: "t0_bgp_data"
 # Tier 1 calls
     t1: 
       call: '/policy/api/v1/infra/tier-1s'

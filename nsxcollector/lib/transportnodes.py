@@ -1,5 +1,5 @@
 #!/opt/homebrew/bin/python3
-from lib import interfaces, connection, color, commands
+from lib import interfaces, connection, color, commands, tools
 import logging
 
 class TN:
@@ -45,25 +45,24 @@ class TN:
         """
         url = call_node.replace('TNID', self.uuid)
         tn_int_json, code = connection.GetAPIGeneric(manager_url + url, login, password)
-        if code == 200:
-            if isinstance(tn_int_json, dict) and 'results' in tn_int_json and tn_int_json['result_count'] > 0:
-                for it in tn_int_json['results']:
-                    if (self.type == 'EdgeNode' and (it['interface_id'] != 'eth0' and it['interface_id'] != 'kni-lrport-0')) or (self.type == 'HostNode' and it['interface_type'] == 'PHYSICAL' and (it['connected_switch_type'] == 'N-VDS' or it['connected_switch_type'] == 'VDS')):
-                        interface = interfaces.Interface(it['interface_id'])
-                        interface.admin_status = it['admin_status']
-                        interface.link_status = it['link_status']
-                        interface.mtu = it['mtu']
-                        interface.node_name = self.name
-                        interface.node_type = self.type
-                        call_stats['call'] = call_stats['call'].replace('TNID', self.uuid).replace('INTID', it['interface_id'])
-                        interface.call = commands.cmd('int_stats_call',call_stats, interface, timeout)
-
-                        if 'interface_type' in it: interface.interface_type = it['interface_type']
-                        if 'interface_uuid' in it: interface.uuid = it['interface_uuid']
-                        if 'connected_switch_type' in it: interface.connected_switch_type = it['connected_switch_type']
-                        if interface not in self.interfaces:
-                            logging.info(color.style.RED + "-- ==> " + color.style.NORMAL + "Found interface " + it['interface_id'] + " in " + self.name)
-                            self.interfaces.append(interface)
+        if code == 200 and isinstance(tn_int_json, dict) and 'results' in tn_int_json and tn_int_json['result_count'] > 0:
+            for it in tn_int_json['results']:
+                if (self.type == 'EdgeNode' and (it['interface_id'] != 'eth0' and it['interface_id'] != 'kni-lrport-0')) or (self.type == 'HostNode' and it['interface_type'] == 'PHYSICAL' and (it['connected_switch_type'] == 'N-VDS' or it['connected_switch_type'] == 'VDS')):
+                    copy_call = {}
+                    interface = interfaces.Interface(it['interface_id'])
+                    interface.admin_status = it['admin_status']
+                    interface.link_status = it['link_status']
+                    interface.mtu = it['mtu']
+                    interface.node_name = self.name
+                    interface.node_type = self.type
+                    copy_call = tools.copyConfigCall(call_stats, 'TNID', self.uuid, INTID_str='INTID', INTID=it['interface_id'])
+                    interface.call = commands.cmd('int_stats_call',copy_call, interface, timeout)
+                    if 'interface_type' in it: interface.interface_type = it['interface_type']
+                    if 'interface_uuid' in it: interface.uuid = it['interface_uuid']
+                    if 'connected_switch_type' in it: interface.connected_switch_type = it['connected_switch_type']
+                    if interface not in self.interfaces:
+                        logging.info(color.style.RED + "-- ==> " + color.style.NORMAL + "Found interface " + it['interface_id'] + " in " + self.name)
+                        self.interfaces.append(interface)
 
             
 

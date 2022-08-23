@@ -1,6 +1,6 @@
 #!/opt/homebrew/bin/python3
 from lib import connection, color
-from lib.panels import simplePanel, Edge_Int_Panel, Nodes_Int_Panel
+from lib.panels import simplePanel, Edge_Int_Panel, Nodes_Int_Panel, dummyPanel
 import sys, logging
 
 
@@ -184,7 +184,6 @@ class grafana:
 
 def createGrafanaEnv(args, config, gf, InDB, infra):
     """
-    createGrafanaEnv(config, dictenv, ListTN)
     Create the grafana environnement: Folder, Dashboards, Panels
 
     Args

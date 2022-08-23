@@ -1,12 +1,12 @@
 #!/opt/homebrew/bin/python3
-from lib import interfaces, connection, color, commands
+from lib import interfaces, connection, color, commands, tools
 import logging
 
 class Router:
     type = ''
     ha_mode = ''
     failover_mode = ''
-    call = ''
+    calls = []
     localservice = ''
     interfaces = []
     
@@ -15,6 +15,7 @@ class Router:
         self.id = id
         self.unique_id = unique_id
         self.interfaces = []
+
 
     def getIntCommandsPolling(self):
         Tab_result = []
@@ -30,7 +31,8 @@ class Router:
         print(' - type: ' + self.type)
         print(' - ha_mode: ' + self.ha_mode)
         print(' - failover_mode: ' + self.failover_mode)
-        self.call.viewCommand()
+        for cmd in self.calls:
+            cmd.viewCommand()
         print(' - localservice: ' + self.localservice)
         for it in self.interfaces:
             it.viewInterface()
@@ -55,14 +57,15 @@ class Router:
         rtr_int_json, code = connection.GetAPIGeneric(manager_url + url, login, password)
         if code == 200 and isinstance(rtr_int_json, dict) and 'results' in rtr_int_json and rtr_int_json['result_count'] > 0:
             for it in rtr_int_json['results']:
+                copy_call = {}
                 interface = interfaces.Interface(it['display_name'])
                 interface.type = it['type']
                 interface.node_name = self.id
                 interface.node_type = self.type
                 interface.resource_type = it['resource_type']
                 interface.uuid = it['unique_id']
-                call_stats['call'] = call_stats['call'].replace('RTRID', self.id).replace('INTID', it['id']).replace('LSID', self.localservice)
-                interface.call = commands.cmd('int_stats_call',call_stats, interface, timeout)
+                copy_call = tools.copyConfigCall(call_stats, 'RTRID', self.id, 'LSID', self.localservice, 'INTID', it['id'])
+                interface.call = commands.cmd('int_stats_call',copy_call, interface, timeout)
 
                 if interface not in self.interfaces:
                     logging.info(color.style.RED + "-- ==> " + color.style.NORMAL + "Found interface " + it['display_name'] + " in " + self.name)

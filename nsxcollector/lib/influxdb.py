@@ -103,3 +103,7 @@ def t0_int_stats_data(nsx_object, json):
 
 def tn_int_stats_data(nsx_object, json):
     return ["Bandwidth," + nsx_object.node_type + "=" + nsx_object.node_name + ",interface=" + json['interface_id'] + " rx=" + str(json['rx_bytes']) + ",tx=" + str(json['tx_bytes'])]
+
+def t0_bgp_data(nsx_object, json):
+    print(json)
+    return []

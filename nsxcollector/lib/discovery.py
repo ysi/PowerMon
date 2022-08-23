@@ -38,6 +38,9 @@ class nsx_infra:
             if seg.call.usedforPolling: Tab_Result.append(call)
         # get commands in all T0 routers
         for t0 in self.t0_routers:
+            for cd in t0.calls:
+                if cd.usedforPolling: 
+                    Tab_Result.append(cd)
             Tab_Result = Tab_Result + t0.getIntCommandsPolling()
         # get commands in all T1 routers
         for t1 in self.t1_routers:
@@ -93,16 +96,11 @@ def discovery(config):
                 config_call['call'] = config_call['call'] + '/' + node['node_id']
                 tn.ip_mgmt = node['node_deployment_info']['ip_addresses'][0]
                 tn.type = node['node_deployment_info']['resource_type']
-                tn_int_call = config['Monitoring_calls']['tn_interfaces']['call'].replace('TNID', tn.uuid)
-                TN_config = {
-                    'call': config['Monitoring_calls']['tn_status']['call'].replace('TNID', node['node_id']),
-                    'polling': config['Monitoring_calls']['tn_interfaces']['polling']
-                }
+                TN_config = tools.copyConfigCall(config['Monitoring_calls']['tn_status'], 'TNID', node['node_id'])
                 tn.call = commands.cmd('tn_status_call',TN_config, tn, config['General']['api_timeout'])
                 int_stats = dict(config['Monitoring_calls']['tn_interfaces_stats'])
-
-                tn.discoverInterfaces(tn_int_call, int_stats,url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
-                tn.tn_status_call = commands.cmd('tn_status_call',TN_config, tn, config['General']['api_timeout'])
+                tn.discoverInterfaces(config['Monitoring_calls']['tn_interfaces']['call'], int_stats,url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
+                # tn.tn_status_call = commands.cmd('tn_status_call',TN_config, tn, config['General']['api_timeout'])
                 infra.nodes.append(tn)
 
         # T0 discovery
@@ -114,13 +112,19 @@ def discovery(config):
                 rtrT0.type = t0['resource_type']
                 rtrT0.ha_mode = t0['ha_mode']
                 rtrT0.failover_mode = t0['failover_mode']
-                rtrT0_config = {
-                    'call': config['Monitoring_calls']['t0']['call'].replace('RTRID', rtrT0.id),
-                    'polling': config['Monitoring_calls']['t0_interfaces']['polling']
-                }
+                rtrT0_config = tools.copyConfigCall(config['Monitoring_calls']['t0'], 'RTRID', rtrT0.id)
                 int_stats = dict(config['Monitoring_calls']['t0_interfaces_stats'])
-                rtrT0.call = commands.cmd('t0_call',rtrT0_config, rtrT0, config['General']['api_timeout'])
+                rtrT0.calls = []
+                rtrT0.calls.append(commands.cmd('t0_call',rtrT0_config, rtrT0, config['General']['api_timeout']))
+                # Get localservice
                 rtrT0.getLocalService(url,config['Monitoring_calls']['t0_localservice']['call'],config['Component']['Manager']['login'], config['Component']['Manager']['password'])
+
+                # add BGP command
+                if 't0_bgp' in config['Monitoring_calls']:
+                    bgpcall = tools.copyConfigCall(config['Monitoring_calls']['t0_bgp'], 'RTRID', rtrT0.id, LSID_str='LSID', LSID=rtrT0.localservice)
+                    bgpcmd = commands.cmd('t0_bgp',bgpcall,rtrT0, config['General']['api_timeout'])
+                    if bgpcmd not in rtrT0.calls: rtrT0.calls.append(bgpcmd)                    
+
                 rtrT0.discoverInterfaces(config['Monitoring_calls']['t0_interfaces']['call'], int_stats,url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
                 infra.t0_routers.append(rtrT0)
 
@@ -133,12 +137,10 @@ def discovery(config):
                 rtrT1.ha_mode = t1['ha_mode']
                 rtrT1.type = t1['resource_type']
                 rtrT1.failover_mode = t1['failover_mode']
-                rtrT1_config = {
-                    'call': config['Monitoring_calls']['t1']['call'].replace('RTRID', rtrT0.id),
-                    'polling': config['Monitoring_calls']['t1_interfaces']['polling']
-                }
+                rtrT1_config = tools.copyConfigCall(config['Monitoring_calls']['t1'], 'RTRID', rtrT1.id)
+                rtrT1.calls = []
                 int_stats = dict(config['Monitoring_calls']['t0_interfaces_stats'])
-                rtrT1.call = commands.cmd('t1_call',rtrT1_config, rtrT1, config['General']['api_timeout'])
+                rtrT1.calls.append(commands.cmd('t1_call',rtrT1_config, rtrT1, config['General']['api_timeout']))
                 rtrT1.getLocalService(url,config['Monitoring_calls']['t1_localservice']['call'],config['Component']['Manager']['login'], config['Component']['Manager']['password'])
                 rtrT1.discoverInterfaces(config['Monitoring_calls']['t1_interfaces']['call'], int_stats,url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
                 infra.t1_routers.append(rtrT1)
