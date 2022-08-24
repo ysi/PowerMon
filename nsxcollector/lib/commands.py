@@ -1,8 +1,13 @@
 #!/opt/homebrew/bin/python3
 
+from unittest import result
+
+
 class cmd:
     influxdbfunction = ""
     usedforPolling = False
+    version = ""
+    result = None
 
     # init method or constructor
     def __init__(self, name, config_call, node, timeout):

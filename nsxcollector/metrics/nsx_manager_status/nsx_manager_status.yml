@@ -1,0 +1,55 @@
+Calls:
+  -
+    call: /api/v1/cluster/status
+    polling: 30
+  -
+    call: /policy/api/v1/cluster/backups/overview
+    polling: 30
+
+Grafana:
+  panel_parameters:
+    dashboard: NSX Managers
+    name: NSX Manager Status
+    suffix_name: ''
+    type: 'stat'
+
+InfluxDB:
+  -
+    measurement: CC-Status
+    search_values:
+      - 
+        key: 'status'
+        values_in_json: ["control_cluster_status", "status"]
+  -
+    measurement: MC-Status
+    search_values:
+      - 
+        key: 'status'
+        values_in_json: ["mgmt_cluster_status", "status"]
+  -
+    measurement: MC-Nodes
+    search_values:
+      - 
+        key: 'UP'
+        values_in_json: ["mgmt_cluster_status", "online_nodes"]
+      - 
+        key: 'DOWN'
+        values_in_json: ["mgmt_cluster_status", "offline_nodes"]
+  -
+    measurement: BKP-Config
+    search_values:
+      - 
+        key: 'enabled'
+        values_in_json: ["backup_enabled"]
+  -
+    measurement: BKP-LastStatus
+    search_values:
+      - 
+        key: 'status'
+        values_in_json: ["cluster_backup_statuses", 0, "success"]
+  -
+    measurement: BKP-Schedule
+    search_values:
+      - 
+        key: 'schedule'
+        values_in_json: ["backup_schedule", "resource_type"]

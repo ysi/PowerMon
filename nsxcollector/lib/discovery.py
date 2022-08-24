@@ -2,7 +2,6 @@
 from lib import connection, color, transportnodes, commands, managers, routers, segments, tools
 import sys, logging
 
-
 class nsx_infra:
     def __init__(self, name, url_api):
         self.name = name
@@ -100,7 +99,6 @@ def discovery(config):
                 tn.call = commands.cmd('tn_status_call',TN_config, tn, config['General']['api_timeout'])
                 int_stats = dict(config['Monitoring_calls']['tn_interfaces_stats'])
                 tn.discoverInterfaces(config['Monitoring_calls']['tn_interfaces']['call'], int_stats,url,config['Component']['Manager']['login'], config['Component']['Manager']['password'], config['General']['api_timeout'])
-                # tn.tn_status_call = commands.cmd('tn_status_call',TN_config, tn, config['General']['api_timeout'])
                 infra.nodes.append(tn)
 
         # T0 discovery

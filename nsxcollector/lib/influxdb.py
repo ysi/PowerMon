@@ -2,7 +2,7 @@
 
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
-from lib import color
+from lib import color, tools
 import logging
 from threading import current_thread
 
@@ -59,6 +59,11 @@ class influxdb:
 
 
 def cluster_status_data(nsx_object, json):
+
+    # print(tools.get_recursively(json, 'status'))
+    print("CC-Status: " + json.get("control_cluster_status", {}).get('status'))
+    print("MC-Status: " + json.get("mgmt_cluster_status", {}).get('status'))
+    print("MC-Nodes: " + str(json.get("mgmt_cluster_status", {}).get('online_nodes')))
     # Format result of call api /api/v1/cluster/status
     Tab_result = []
     # Value for Control Cluster STATUS
@@ -77,7 +82,7 @@ def cluster_status_data(nsx_object, json):
         Tab_result.append(status)
     # Value for Backup scheduled
     if isinstance(json, dict) and 'backup_schedule' in json:
-        status = "BKP-Config,host="+nsx_object.id+" schedule=\""+json["backup_schedule"]["resource_type"]+"\""
+        status = "BKP-Schedule,host="+nsx_object.id+" schedule=\""+json["backup_schedule"]["resource_type"]+"\""
         Tab_result.append(status)
     # Value for Last backup
     if isinstance(json, dict) and 'cluster_backup_statuses' in json and len(json["cluster_backup_statuses"])>0:
@@ -97,7 +102,6 @@ def cluster_status_data(nsx_object, json):
 
 
 def t0_int_stats_data(nsx_object, json):
-    # get router name
     return ["Bandwidth," + nsx_object.node_type + "=" + nsx_object.node_name + ",interface=" + nsx_object.name + " rx=" + str(json['per_node_statistics'][0]['rx']['total_bytes']) + ",tx=" + str(json['per_node_statistics'][0]['tx']['total_bytes'])]
 
 

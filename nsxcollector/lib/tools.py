@@ -1,12 +1,9 @@
 #!/opt/homebrew/bin/python3
 
-from ast import expr_context
 import yaml, sys, json, logging, jinja2, os
-from lib import color, tools
+import lib
 from dotenv.main import dotenv_values
-
 from .influxdb import influxdb
-# from jinja2 import PackageLoader
 
 
 def json_extract(obj, key):
@@ -47,7 +44,7 @@ def renderPanel(templatename, parameters):
         logging.debug(json_render)
         return json_render
     except ValueError:  # includes simplejson.decoder.JSONDecodeError
-        print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error templating ")
+        print(lib.color.style.RED + "ERROR: " + lib.color.style.NORMAL + "Error templating ")
         sys.exit()
 
 
@@ -68,7 +65,7 @@ def readYML(YAML_CFG_FILE):
         with open(YAML_CFG_FILE, 'r') as ymlfile:
             YAML_DICT = yaml.load(ymlfile, Loader=yaml.FullLoader)
             if len(YAML_DICT['Component']) == 0:
-                print(color.style.RED + YAML_CFG_FILE + ": error - no components in section: Component" + color.style.NORMAL)
+                print(lib.color.style.RED + YAML_CFG_FILE + ": error - no components in section: Component" + lib.color.style.NORMAL)
                 sys.exit(1)
             # Check if YAML file is good.
             for key, value in YAML_DICT.items():
@@ -77,41 +74,19 @@ def readYML(YAML_CFG_FILE):
                     for tp, node in YAML_DICT['Component'].items():
                         # Check Manager info
                         if tp == 'Manager' and (node['fqdn'] == '' or node['fqdn'] is None or node['login'] == '' or node['login'] is None or node['password'] == '' or node['password'] is None or node['type'] == '' or node['type'] is None):
-                            print(color.style.RED + YAML_CFG_FILE + ": error - empty value in section: " + tp + color.style.NORMAL)
+                            print(lib.color.style.RED + YAML_CFG_FILE + ": error - empty value in section: " + tp + lib.color.style.NORMAL)
                             sys.exit(1)
                         if tp == 'Edge' and (node['login'] == '' or node['login'] is None or node['password'] == '' or node['password'] is None or node['type'] == '' or node['type'] is None):
-                            print(color.style.RED + YAML_CFG_FILE + ": error - empty value in section: "  + tp + color.style.NORMAL)
+                            print(lib.color.style.RED + YAML_CFG_FILE + ": error - empty value in section: "  + tp + lib.color.style.NORMAL)
                             sys.exit(1)
                         if tp == 'Host' and (node['login'] == '' or node['login'] is None or node['password'] == '' or node['password'] is None or node['type'] == '' or node['type'] is None):
-                            print(color.style.RED + YAML_CFG_FILE + ": error - empty value in section: "  + tp + color.style.NORMAL)
+                            print(lib.color.style.RED + YAML_CFG_FILE + ": error - empty value in section: "  + tp + lib.color.style.NORMAL)
                             sys.exit(1)
             return YAML_DICT
     except Exception as e:
-        print(color.style.RED + YAML_CFG_FILE + ": error to read YAML config file" + color.style.NORMAL)
+        print(lib.color.style.RED + YAML_CFG_FILE + ": error to read YAML config file" + lib.color.style.NORMAL)
         sys.exit(1)
 
-
-def formatResultSSH(output, all=True):
-    """
-    Read the environment file
-    Parameters
-    ----------
-    output (str): result of the SSH command
-    all (boolean): if many result commands is in the output
-    Returns
-    ----------
-    a json/dictionay of the result
-    """
-    if all:
-        for r in output:
-            connection = output[r]
-            # run function return a string with \n. Need to erase \n from the string and convert it on a real json
-            result = json.loads(connection.stdout.replace('\n', ''))
-            return result
-
-    else:
-        result = json.loads(output.replace('\n', ''))
-        return result
 
 def readENV(args):
     """
@@ -125,7 +100,7 @@ def readENV(args):
             envjson = dotenv_values("../.env")
             return envjson
         except:
-            print(color.style.RED + "ERROR: error to read .env file" + color.style.NORMAL)
+            print(lib.color.style.RED + "ERROR: error to read .env file" + lib.color.style.NORMAL)
     else:
         envjson = {
             'INFLUXDB_DOCKER_CONTAINER_NAME': os.getenv('INFLUXDB_DOCKER_CONTAINER_NAME'),
@@ -156,3 +131,30 @@ def copyConfigCall(configcall, TNID_str="", TNID="", LSID_str="", LSID="", INTID
     if 'influxdbfunction' in configcall:
         copycall['influxdbfunction'] = configcall['influxdbfunction']  
     return copycall
+
+def get_recursively(search_dict, field):
+    """
+    Takes a dict with nested lists and dicts,
+    and searches all dicts for a key of the field
+    provided.
+    """
+    fields_found = []
+
+    for key, value in search_dict.items():
+
+        if key == field:
+            fields_found.append({key: value})
+
+        elif isinstance(value, dict):
+            results = get_recursively(value, field)
+            for result in results:
+                fields_found.append({key: result})
+
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    more_results = get_recursively(item, field)
+                    for another_result in more_results:
+                        fields_found.append({key: another_result})
+
+    return fields_found
