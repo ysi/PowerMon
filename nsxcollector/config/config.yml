@@ -69,9 +69,9 @@ Discovering:
   list_segments: ListAllInfraSegments
   list_t0: ListTier0s
   list_t0_localservice: ListTier0LocaleServices
-  list_t0_interface: ListTier0Interfaces
+  list_t0_interfaces: ListTier0Interfaces
   list_t1: ListTier1
   list_t1_localservice: ListTier1LocaleServices
-  list_t1_interface: ListTier1Interfaces
+  list_t1_interfaces: ListTier1Interfaces
   list_tn: ListTransportNodesWithDeploymentInfo
   list_tn_interfaces: ListTransportNodeInterfaces

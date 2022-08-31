@@ -1,7 +1,7 @@
 #!/opt/homebrew/bin/python3
 from lib import tools, connection
-from lib.nsxinfra import fabric, commands, transportnodes, segments, routers, node
-import logging, sys, copy
+from lib.nsxinfra import fabric, commands, segments, node
+import logging
 
 class nsx_infra:
     def __init__(self, name, url_api, api_timeout, login, password, federation):
@@ -24,12 +24,9 @@ class nsx_infra:
         self.nodes = []
         self.segments = []
         self.tz = []
-        self.routers = []
         self.calls = []
         self.swagger = None
         self.commandfile = ""
-        # For testing
-        self.testnodes = []
 
 
     def viewInfra(self):
@@ -50,9 +47,7 @@ class nsx_infra:
         self.viewInfra()
         self.cluster.viewCluster()
         for node in self.nodes:
-            node.viewTN()
-        for rtr in self.routers:
-            rtr.viewRouter()
+            node.viewNode()
         for sg in self.segments:
             sg.viewSegment()
 
@@ -64,10 +59,6 @@ class nsx_infra:
         for node in self.nodes:
             if node.name == name:
                 return node
-
-        for rtr in self.routers:
-            if rtr.name == name:
-                return rtr
         
         return None
 
@@ -132,71 +123,42 @@ class nsx_infra:
         for k, cmdname in self.discovercalls.items():
             if k == 'list_t0' or k == 'list_t1' or k == 'list_tn':
                 typenode = k.split('_')[1]
-                cmd = self.swagger.searchCommand(exact=True, name=cmdname, scope=self.federation)
-                print(cmd.__dict__)
-                json, code = connection.GetAPIGeneric(self.url_api + cmd.call, self.login, self.password)
+                int_cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls[k + '_interfaces'], scope=self.federation)
+                
+                nodecmd = self.swagger.searchCommand(exact=True, name=cmdname, scope=self.federation)
+                json, code = connection.GetAPIGeneric(self.url_api + nodecmd.call, self.login, self.password)
                 if code == 200 and isinstance(json, dict) and 'results' in json and json['result_count'] > 0:
                     for nd in json['results']:
                         if typenode == 'tn': 
                             typeobj = nd['node_deployment_info']['resource_type']
-                            id = nd['node_id']
-                            ip_mgmt = nd['node_deployment_info']['ip_addresses'][0]
+                            nodeObj = node.transportnode(nd['display_name'],nd['id'],typeobj)
+                            nodeObj.node_id = nd['node_id']
+                            nodeObj.ip_mgmt = nd['node_deployment_info']['ip_addresses'][0]
+                            nodeObj.call_variable_id = "{transportnodeid}"
+                            url = int_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id)
+
                         elif typenode == 't1': 
-                            typeobj = nd['resource_type']
-                            id = nd['id']
-                            call_variable_id = '{tier1id}'
+                            nodeObj = node.router(nd['display_name'],nd['id'],nd['resource_type'])
+                            nodeObj.call_variable_id = '{tier1id}'
+                            ls_cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls['list_' + typenode + '_localservice'], scope=self.federation)
+                            nodeObj.localservice = nodeObj.getLocalService(self, ls_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id))
+                            url = int_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id).replace('{localeserviceid}', nodeObj.localservice)
+
                         else:
-                            typeobj = nd['resource_type']
-                            id = nd['id']
-                            call_variable_id = '{tier0id}'
-                        logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Found Node " + id + ' - ' + nd['display_name'])
-                        nodeObj = node.node(nd['display_name'],id,typeobj)
-                        nodeObj.call_variable_id = call_variable_id
-                        nodeObj.viewNode()
+                            nodeObj = node.router(nd['display_name'],nd['id'],nd['resource_type'])
+                            nodeObj.call_variable_id = '{tier0id}'
+                            ls_cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls['list_' + typenode + '_localservice'], scope=self.federation)
+                            nodeObj.localservice = nodeObj.getLocalService(self, ls_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id))
+                            url = int_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id).replace('{localeserviceid}', nodeObj.localservice)
 
-    def addTN(self):
-        logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Getting Transport Nodes")
-        # NSX Edge and Host Treatment
-        cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls['list_tn'], scope=self.federation)
-        tn_json, code = connection.GetAPIGeneric(self.url_api + cmd.call, self.login, self.password)
-        if code == 200 and isinstance(tn_json, dict) and 'results' in tn_json and tn_json['result_count'] > 0:
-            for node in tn_json['results']:
-                logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Found Transport Node " + node['display_name'])
-                tn = transportnodes.TN(node['display_name'], node['node_id'], node['node_deployment_info']['resource_type'])
-                tn.ip_mgmt = node['node_deployment_info']['ip_addresses'][0]
-                tn.call = commands.cmd('tn_status_call', cmd.call + '/' + tn.id, self.version, tags=['Polling'])
-                self.calls.append(tn.call)
-                tn.discoverInterfaces(self)
-                self.nodes.append(tn)
-        else:
-            print(tools.color.RED + "ERROR - Discovery: Can't access to " + cmd.call + tools.color.NORMAL + ' - HTTP error: ' + str(code))
+                        logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Found Node " + nodeObj.type + ' - ' + nd['display_name'])
+                        
+                        nodeObj.discoverInterfaces(self, url)
+                        self.nodes.append(nodeObj)
 
-    def addRouters(self, typeRTR):
-        logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Getting Routers (T0/T1)")
-        # Router T0/T1 discovery
-        cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls[typeRTR], scope=self.federation)
-        json, code = connection.GetAPIGeneric(self.url_api + cmd.call, self.login, self.password)
-        if code == 200 and isinstance(json, dict) and 'results' in json and json['result_count'] > 0:
-            for rtr in json['results']:
-                logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + rtr['resource_type'] + " - " + rtr['display_name'])
-                RTRObject = routers.Router(rtr['display_name'], rtr['id'], rtr['unique_id'], rtr['resource_type'])
-                if RTRObject.type == 'Tier0': RTRObject.ha_mode = rtr['ha_mode']
-                RTRObject.failover_mode = rtr['failover_mode']
-                RTRObject.path = rtr['path']
-                RTRObject.call = commands.cmd(typeRTR + '_status', cmd.call + '/' + RTRObject.id, self.version)
-                self.calls.append(RTRObject.call)
-                ls_cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls[typeRTR + '_localservice'], scope=self.federation)
-                int_cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls[typeRTR + '_interface'], scope=self.federation)
+                else:
+                    print(tools.color.RED + "ERROR - Discovery: Can't access to " + nodecmd.call + tools.color.NORMAL + ' - HTTP error: ' + str(code))
 
-                if RTRObject.type == 'Tier0': RTRObject.call_variable_id = '{tier0id}'
-                else: RTRObject.call_variable_id = '{tier1id}'
-                RTRObject.localservice = RTRObject.getLocalService(self, ls_cmd.call.replace(RTRObject.call_variable_id, RTRObject.id))
-                # Add interfaces
-                RTRObject.discoverInterfaces(self, int_cmd.call.replace(RTRObject.call_variable_id, RTRObject.id).replace('{localeserviceid}', RTRObject.localservice))
-                # Get localservice
-                self.routers.append(RTRObject)
-        else:
-            print(tools.color.RED + "ERROR - Discovery: Can't access to " + cmd.call + tools.color.NORMAL + ' - HTTP error: ' + str(code))
 
     def addSegments(self):
         logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Getting Segments")

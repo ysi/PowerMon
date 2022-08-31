@@ -31,14 +31,7 @@ def discovery(config):
         nsxinfra.getGenInformations()
         nsxinfra.addTransportZone()
         nsxinfra.addCluster()
-        # nsxinfra.addNodes()
-        # sys.exit()
-
-        nsxinfra.addTN()
-        for k, v in nsxinfra.discovercalls.items():
-            if k == 'list_t0' or k == 'list_t1': nsxinfra.addRouters(k)
-        
-
+        nsxinfra.addNodes()
         nsxinfra.addSegments()
 
         print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len(nsxinfra.cluster.members)) + " NSX Manager(s)")
