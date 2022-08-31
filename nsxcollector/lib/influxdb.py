@@ -2,7 +2,7 @@
 
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
-from lib import color, tools
+from lib import tools
 import logging
 from threading import current_thread
 
@@ -25,7 +25,7 @@ class influxdb:
         # Connect to InfluxDB
         result = None
         while result is None:
-            print(color.style.RED + "==> " + color.style.NORMAL + " Trying to connect to InfluxDB: " + influxurl + color.style.NORMAL)
+            print(tools.color.RED + "==> " + tools.color.NORMAL + " Trying to connect to InfluxDB: " + influxurl + tools.color.NORMAL)
             try:
                 client = InfluxDBClient(url=influxurl, token=self.token, org=self.org)
                 self.api = client.write_api(write_options=SYNCHRONOUS)
@@ -34,9 +34,9 @@ class influxdb:
                 result = buckets_api.find_buckets()
             except Exception as esx:
                 logging.debug(esx)
-                print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error when connecting to InfluxDB: trying again")
+                print(tools.color.RED + "ERROR: " + tools.color.NORMAL + "Error when connecting to InfluxDB: trying again")
 
-        print(color.style.RED + "==> " + color.style.NORMAL + "Connection to InfluxDB: "  + color.style.GREEN + "Established" + color.style.NORMAL)
+        print(tools.color.RED + "==> " + tools.color.NORMAL + "Connection to InfluxDB: "  + tools.color.GREEN + "Established" + tools.color.NORMAL)
 
     def influxWrite(self, cmd, json):
         """
@@ -54,7 +54,7 @@ class influxdb:
             logging.info(current_thread().name + ": Writing Data on Influxdb: " + ', '.join(format_data))
             self.api.write(self.bucket, self.org, format_data)
         except Exception as esx:
-            print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error while writing to InfluxDB")
+            print(tools.color.RED + "ERROR: " + tools.color.NORMAL + "Error while writing to InfluxDB")
             logging.info(esx)
 
 
@@ -111,3 +111,38 @@ def tn_int_stats_data(nsx_object, json):
 def t0_bgp_data(nsx_object, json):
     print(json)
     return []
+
+
+
+def createQueries(ymlconfig, cmd, node):
+    """
+    Create influxdb Queries based on yaml file
+    Return a list of queries
+
+    Args
+    ----------
+    ymlconfig : yaml config dictionnay
+    cmd (obj): object command
+    node (obj): node concerning the query
+    """
+    List_Queries = []
+    for mesure in ymlconfig['influx_queries']:
+        query = mesure['measurement'] + ','
+        for idx, tag in enumerate(mesure['tags']):
+            if len(cmd.parameters_values) == 0: tag_value = node.id
+            else: tag_value = cmd.parameters_values[idx]
+
+            if len(mesure['search_values']) == idx + 1:
+                query = query + tag + '=' + tag_value
+            else:
+                query = query + tag + '=' + tag_value + ','
+        query = query + " "
+        for idx, searchvalue in enumerate(mesure['search_values']):
+            if len(mesure['search_values']) == idx + 1:
+                query = query + searchvalue['key'] + '=' + 'VALUE' + str(idx + 1)
+            else:
+                query = query + searchvalue['key'] + '=' + 'VALUE' + str(idx + 1) + ','
+        
+        List_Queries.append(query)
+    return List_Queries
+    

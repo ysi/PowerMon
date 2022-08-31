@@ -1,7 +1,7 @@
 #!/opt/homebrew/bin/python3
 
 import requests, urllib3, logging
-from lib import color
+from lib import tools
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
@@ -22,7 +22,7 @@ def GetAPIGeneric(url, login, password, jsonformat=False, timeout=60, debug=Fals
         'Content-type': 'application/json',
         'Accept': 'application/json'
     }
-    loginfo = color.style.RED + "==> " + color.style.NORMAL + Component + " - " + description + " - " + color.style.GREEN + "Ok" + color.style.NORMAL
+    loginfo = tools.color.RED + "==> " + tools.color.NORMAL + Component + " - " + description + " - " + tools.color.GREEN + "Ok" + tools.color.NORMAL
     try:
         resultJSON = {}
         result =  requests.get(url, headers=headers, auth=(login, password), verify=False, timeout=timeout)
@@ -37,7 +37,7 @@ def GetAPIGeneric(url, login, password, jsonformat=False, timeout=60, debug=Fals
 
     
     except requests.exceptions.RequestException as error:
-        print(color.style.RED + "ERROR in API call: " + url + color.style.NORMAL)
+        print(tools.color.RED + "ERROR in API call: " + url + tools.color.NORMAL)
         logging.debug(str(error))
         raise SystemExit(error)
 
@@ -59,7 +59,7 @@ def PostAPIGeneric(url, login, password, body, debug=False, Component='', descri
         'Content-type': 'application/json',
         'Accept': 'application/json'
     }
-    loginfo = color.style.RED + "==> " + color.style.NORMAL + Component + " - " + description + " - " + color.style.GREEN + "Ok" + color.style.NORMAL
+    loginfo = tools.color.RED + "==> " + tools.color.NORMAL + Component + " - " + description + " - " + tools.color.GREEN + "Ok" + tools.color.NORMAL
     try:
         result =  requests.post(url, json=body, headers=headers, auth=(login, password), verify=False)
         if result.status_code == 200:
@@ -72,6 +72,6 @@ def PostAPIGeneric(url, login, password, body, debug=False, Component='', descri
             return result.status_code
     
     except requests.exceptions.RequestException as error:
-        print(color.style.RED + "ERROR in API call: " + url + color.style.NORMAL)
+        print(tools.color.RED + "ERROR in API call: " + url + tools.color.NORMAL)
         logging.debug(str(error))
         raise SystemExit(error)

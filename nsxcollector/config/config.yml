@@ -1,7 +1,10 @@
 General:
   Name_Infra: "Lab Yann2"
   api_timeout: 10
-
+  policy_commands: /policy/api/v1/spec/openapi/nsx_policy_api.json
+  manager_commands: /api/v1/spec/openapi/nsx_api.json
+  Federation: False
+  configpanel_path: "metrics"
 
 # Component of NSX Infrastructure
 Component:
@@ -16,103 +19,59 @@ Grafana:
   Dashboards:
     -
       name: 'NSX Managers'
-      panels:
-        -
-          name: 'NSX Manager Status'
-          panelfunction : "simplePanel"
-          type: 'stat'
-          template: 'nsx-manager-status'
-        -
-          name: 'NSX Services Status'
-          panelfunction : "simplePanel"
-          type: 'table'
-          template: 'nsx-services-status'
+      # panels:
+      #   -
+      #     name: 'NSX Manager Status'
+      #     panelfunction : "simplePanel"
+      #     type: 'stat'
+      #     template: 'nsx-manager-status'
+      #   -
+      #     name: 'NSX Services Status'
+      #     panelfunction : "simplePanel"
+      #     type: 'table'
+      #     template: 'nsx-services-status'
     -
       name: 'Edge Nodes'
-      panels:
-        -
-          name: 'Edge interfaces stats'
-          panelfunction : "Edge_Int_Panel"
-          type: 'timeseries'
-          template: 'interfaces-stats'
+      # panels:
+      #   -
+      #     name: 'Edge interfaces stats'
+      #     panelfunction : "Edge_Int_Panel"
+      #     type: 'timeseries'
+      #     template: 'interfaces-stats'
     -
       name: 'Transport Nodes'
-      panels:
-        -
-          name: 'Nodes interfaces stats'
-          panelfunction : "Nodes_Int_Panel"
-          type: 'timeseries'
-          template: 'interfaces-stats'
+      # panels:
+      #   -
+      #     name: 'Nodes interfaces stats'
+      #     panelfunction : "Nodes_Int_Panel"
+      #     type: 'timeseries'
+      #     template: 'interfaces-stats'
     - 
       name: 'Overlay'
-      panels:
-        -
-          name: 'BGP'
-          panelfunction : "dummyPanel"
-          type: 'table'
-          template: ''
+      # panels:
+      #   -
+      #     name: 'BGP'
+      #     panelfunction : "dummyPanel"
+      #     type: 'table'
+      #     template: ''
     -
       name: 'Security'
-      panels: []
+      # panels: []
 
 
-Monitoring_calls:
-# Segments calls
-    segments: 
-      call: '/policy/api/v1/infra/segments'
-      polling: 10
-# Tier 0 calls
-    t0: 
-      call: '/policy/api/v1/infra/tier-0s'
-      polling: 10
-    t0_localservice:
-      call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services'
-      polling: 10
-    t0_interfaces:
-      call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services/LSID/interfaces'
-      polling: 10
-    t0_interfaces_stats: 
-      call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services/LSID/interfaces/INTID/statistics'
-      polling: 10
-      influxdbfunction: "t0_int_stats_data"
-    t0_bgp: 
-      call: '/policy/api/v1/infra/tier-0s/RTRID/locale-services/LSID/bgp/neighbors/status?enforcement_point_path=/infra/sites/default/enforcement-points/default'
-      polling: 30
-      influxdbfunction: "t0_bgp_data"
-# Tier 1 calls
-    t1: 
-      call: '/policy/api/v1/infra/tier-1s'
-      polling: 10
-    t1_localservice: 
-      call: '/policy/api/v1/infra/tier-1s/RTRID/locale-services'
-      polling: 10
-    t1_interfaces: 
-      call: '/policy/api/v1/infra/tier-1s/RTRID/locale-services/LSID/interfaces'
-      polling: 10
-    t1_interfaces_stats: 
-      call: '/policy/api/v1/infra/tier-1s/RTRID/locale-services/LSID/interfaces/INTID/statistics'
-      polling: 10
-# Transport nodes calls
-    transport_nodes: 
-      call: '/api/v1/transport-nodes'
-      polling: 10
-    tn_interfaces: 
-      call: '/api/v1/transport-nodes/TNID/network/interfaces?source=realtime'
-      polling: 10
-    tn_interfaces_stats: 
-      call: '/api/v1/transport-nodes/TNID/network/interfaces/INTID/stats?source=realtime'
-      polling: 10
-      influxdbfunction: "tn_int_stats_data"
-    tn_status: 
-      call: /api/v1/transport-nodes/TNID/status
-      polling: 10
-# NSX Manager calls
-    nsx_cluster_status: 
-      call: /api/v1/cluster/status
-      polling: 30
-      influxdbfunction : "cluster_status_data"
-    nsx_cluster_backup: 
-      call: /policy/api/v1/cluster/backups/overview
-      polling: 15
-      influxdbfunction : "cluster_status_data"
-
+# Internal - Do not change
+Discovering:
+  read_cluster: ReadClusterStatus
+  list_gen_site: ListSites
+  list_gen_enforcement: ListEnforcementPointForSite
+  list_gen_domain: ListDomainForInfra
+  list_tz: ListTransportZonesForEnforcementPoint
+  list_segments: ListAllInfraSegments
+  list_t0: ListTier0s
+  list_t0_localservice: ListTier0LocaleServices
+  list_t0_interface: ListTier0Interfaces
+  list_t1: ListTier1
+  list_t1_localservice: ListTier1LocaleServices
+  list_t1_interface: ListTier1Interfaces
+  list_tn: ListTransportNodesWithDeploymentInfo
+  list_tn_interfaces: ListTransportNodeInterfaces

@@ -1,0 +1,67 @@
+# polling parameters
+# each item is a polling type of commands
+# need the call name
+# polling interval
+# mode: can be status, stats or config
+# nodes: define on what node the call must be applied
+# if the list is empty, it will take alls nodes, and all interfaces
+# if 'manager' in nodes. Call there is 'manager' in node, it's a call applied to the nsx manager
+# exemple: 
+# component: 
+#   - 
+#     name: Edge-1,        
+#     interfaces: ['fp-eth0']
+#   - 
+#     name: Edge-2,
+#     type: edgenode
+#     interfaces: ['fp-eth1, fp-eth2']
+# or for all interfaces of an node
+# nodes:
+#   -
+#     name: ESX-1:
+#     interfaces: []
+
+polling:
+  -
+    call: ReadTransportNodeInterfaceStatistics
+    components:
+      - 
+        name: Edge-1
+        interfaces: ['fp-eth0']
+      - name: Edge-2
+        interfaces: []
+    suffix: '?source=realtime'
+    polling: 10
+    influx_queries:
+      -
+        measurement: Bandwidth
+        tags: ['host', 'interface']        
+        search_values:
+          - 
+            key: 'rx'
+            values_in_json: ["rx_bytes"]
+          - 
+            key: 'tx'
+            values_in_json: ["tx_bytes"]
+
+  -
+    call: GetTier0BgpNeighborsStatus
+    polling: 10
+    influx_queries:
+      -
+        measurement: BGPSession
+        tags: ['tier0']
+        search_values:
+          -
+            key: 'session'
+            value_in_json: ['established']
+
+
+
+grafana:
+  panel_parameters:
+    dashboard: Transport Nodes
+    name: Nodes interfaces stats
+    suffix_name: ''
+    type: 'timeseries'
+

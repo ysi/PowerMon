@@ -1,9 +1,14 @@
 #!/opt/homebrew/bin/python3
 
 import yaml, sys, json, logging, jinja2, os
-import lib
 from dotenv.main import dotenv_values
 from .influxdb import influxdb
+
+class color:
+    RED = '\33[31m'
+    ORANGE = '\33[33m'
+    GREEN = '\33[32m'
+    NORMAL = '\033[0m'
 
 
 def json_extract(obj, key):
@@ -44,9 +49,8 @@ def renderPanel(templatename, parameters):
         logging.debug(json_render)
         return json_render
     except ValueError:  # includes simplejson.decoder.JSONDecodeError
-        print(lib.color.style.RED + "ERROR: " + lib.color.style.NORMAL + "Error templating ")
+        print(color.RED + "ERROR: " + color.NORMAL + "Error templating ")
         sys.exit()
-
 
 def readYML(YAML_CFG_FILE):
     """
@@ -65,7 +69,7 @@ def readYML(YAML_CFG_FILE):
         with open(YAML_CFG_FILE, 'r') as ymlfile:
             YAML_DICT = yaml.load(ymlfile, Loader=yaml.FullLoader)
             if len(YAML_DICT['Component']) == 0:
-                print(lib.color.style.RED + YAML_CFG_FILE + ": error - no components in section: Component" + lib.color.style.NORMAL)
+                print(color.RED + YAML_CFG_FILE + ": error - no components in section: Component" + color.NORMAL)
                 sys.exit(1)
             # Check if YAML file is good.
             for key, value in YAML_DICT.items():
@@ -74,19 +78,18 @@ def readYML(YAML_CFG_FILE):
                     for tp, node in YAML_DICT['Component'].items():
                         # Check Manager info
                         if tp == 'Manager' and (node['fqdn'] == '' or node['fqdn'] is None or node['login'] == '' or node['login'] is None or node['password'] == '' or node['password'] is None or node['type'] == '' or node['type'] is None):
-                            print(lib.color.style.RED + YAML_CFG_FILE + ": error - empty value in section: " + tp + lib.color.style.NORMAL)
+                            print(color.RED + YAML_CFG_FILE + ": error - empty value in section: " + tp + color.NORMAL)
                             sys.exit(1)
                         if tp == 'Edge' and (node['login'] == '' or node['login'] is None or node['password'] == '' or node['password'] is None or node['type'] == '' or node['type'] is None):
-                            print(lib.color.style.RED + YAML_CFG_FILE + ": error - empty value in section: "  + tp + lib.color.style.NORMAL)
+                            print(color.RED + YAML_CFG_FILE + ": error - empty value in section: "  + tp + color.NORMAL)
                             sys.exit(1)
                         if tp == 'Host' and (node['login'] == '' or node['login'] is None or node['password'] == '' or node['password'] is None or node['type'] == '' or node['type'] is None):
-                            print(lib.color.style.RED + YAML_CFG_FILE + ": error - empty value in section: "  + tp + lib.color.style.NORMAL)
+                            print(color.RED + YAML_CFG_FILE + ": error - empty value in section: "  + tp + color.NORMAL)
                             sys.exit(1)
             return YAML_DICT
     except Exception as e:
-        print(lib.color.style.RED + YAML_CFG_FILE + ": error to read YAML config file" + lib.color.style.NORMAL)
+        print(color.RED + YAML_CFG_FILE + ": error to read YAML config file" + color.NORMAL)
         sys.exit(1)
-
 
 def readENV(args):
     """
@@ -100,7 +103,7 @@ def readENV(args):
             envjson = dotenv_values("../.env")
             return envjson
         except:
-            print(lib.color.style.RED + "ERROR: error to read .env file" + lib.color.style.NORMAL)
+            print(color.RED + "ERROR: error to read .env file" + color.NORMAL)
     else:
         envjson = {
             'INFLUXDB_DOCKER_CONTAINER_NAME': os.getenv('INFLUXDB_DOCKER_CONTAINER_NAME'),
@@ -118,8 +121,6 @@ def readENV(args):
             'GRAFANA_PORT':os.getenv('GRAFANA_PORT'),
         }
         return envjson
-
-    # Load .env file
 
 def copyConfigCall(configcall, TNID_str="", TNID="", LSID_str="", LSID="", INTID_str="", INTID=""):
     call = configcall['call'].replace(TNID_str, TNID).replace(LSID_str, LSID).replace(INTID_str, INTID)
@@ -158,3 +159,27 @@ def get_recursively(search_dict, field):
                         fields_found.append({key: another_result})
 
     return fields_found
+
+def readPanelsConfig(panelconfig_path):
+    # Read all yml and j2 file and construct a dict for each panels
+    # this dict will be on infra object
+    list_content_folder = os.listdir(panelconfig_path) # returns list
+    List_config_panel = []
+    for item in list_content_folder:
+        config_panel = { 'name': item } 
+        if os.path.isdir(panelconfig_path + '/' + item):
+            # one panel config
+            list_panel_folder_content = os.listdir(panelconfig_path + '/' + item)
+            for file in list_panel_folder_content:
+                if file.endswith('.j2'): 
+                    config_panel['j2_path'] = panelconfig_path + '/' + item + '/' + file
+                if file.endswith('.yml') or file.endswith('.yaml'):
+                    config_panel['yml_path'] = panelconfig_path + '/' + item + '/' + file
+                    with open(config_panel['yml_path'], 'r') as ymlfile:
+                        cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
+                        for k, v in cfg.items():
+                            config_panel[k] = v
+            
+        List_config_panel.append(config_panel)
+    
+    return List_config_panel

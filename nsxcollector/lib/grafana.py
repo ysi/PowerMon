@@ -1,5 +1,5 @@
 #!/opt/homebrew/bin/python3
-from lib import connection, color
+from lib import connection, tools
 from lib.panels import simplePanel, Edge_Int_Panel, Nodes_Int_Panel, dummyPanel
 import sys, logging
 
@@ -25,12 +25,12 @@ class grafana:
         influxurl = "http://" + self.host + ":" + self.port
         code = 0
         while code != 200:
-            print(color.style.RED + "==> " + color.style.NORMAL + "Trying to connect to Grafana: " + influxurl + color.style.NORMAL)
+            print(tools.color.RED + "==> " + tools.color.NORMAL + "Trying to connect to Grafana: " + influxurl + tools.color.NORMAL)
             result, code = connection.GetAPIGeneric(influxurl + '/api/folders', self.login, self.password)
             if code != 200:
-                print(color.style.RED + "ERROR: " + color.style.NORMAL + "Error when connecting to Grafana: trying again")
+                print(tools.color.RED + "ERROR: " + tools.color.NORMAL + "Error when connecting to Grafana: trying again")
         
-        print(color.style.RED + "==> " + color.style.NORMAL + "Connection to Grafana: "  + color.style.GREEN + "Established" + color.style.NORMAL)
+        print(tools.color.RED + "==> " + tools.color.NORMAL + "Connection to Grafana: "  + tools.color.GREEN + "Established" + tools.color.NORMAL)
 
 
     def addFolder(self, folder):
@@ -57,7 +57,7 @@ class grafana:
         url = "http://" + self.host + ":" + self.port + '/api/datasources/name/' + influxdb_name
         response, code = connection.GetAPIGeneric(url, self.login, self.password)
         if code != 200:
-            print(color.style.RED + "==> ERROR: " + color.style.NORMAL + "Grafana - Datasource " + influxdb_name + " not found")
+            print(tools.color.RED + "==> ERROR: " + tools.color.NORMAL + "Grafana - Datasource " + influxdb_name + " not found")
             sys.exit()
         else:
             self.datasource_uid = response['uid']
@@ -81,7 +81,7 @@ class grafana:
         if code != 200:
             connection.PostAPIGeneric(url, self.login, self.password, body, True, 'Grafana', 'Create folder ' + foldername)
         else:
-            print(color.style.RED + "==> " + color.style.NORMAL + "Grafana - Folder " + foldername + " already existing")
+            print(tools.color.RED + "==> " + tools.color.NORMAL + "Grafana - Folder " + foldername + " already existing")
 
 
     def applyDashboard(self, folderuid, dboject):
@@ -114,7 +114,7 @@ class grafana:
         if code != 200:
             connection.PostAPIGeneric(url, self.login, self.password, body, True, 'Grafana', 'Create Dashboard ' + dboject.name)
         else:
-            print(color.style.RED + "==> " + color.style.NORMAL + "Grafana - Dashboard " + dboject.name + " already existing")
+            print(tools.color.RED + "==> " + tools.color.NORMAL + "Grafana - Dashboard " + dboject.name + " already existing")
         
         return dboject.uid
 
