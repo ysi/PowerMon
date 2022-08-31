@@ -5,7 +5,6 @@ import logging
 class node:
     call_variable_id = ''
     path = ''
-    localservice = ''
     # init method or constructor
     def __init__(self, name, id, type):
         self.name = name

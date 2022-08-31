@@ -120,6 +120,7 @@ class nsx_infra:
 
 
     def addNodes(self):
+        logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Getting Nodes")
         for k, cmdname in self.discovercalls.items():
             if k == 'list_t0' or k == 'list_t1' or k == 'list_tn':
                 typenode = k.split('_')[1]

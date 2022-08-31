@@ -1,6 +1,6 @@
 #!/opt/homebrew/bin/python3
 from lib import tools
-from lib.nsxinfra import transportnodes, commands, infra
+from lib.nsxinfra import commands, infra
 import sys, logging
 
 def discovery(config):
@@ -35,11 +35,13 @@ def discovery(config):
         nsxinfra.addSegments()
 
         print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len(nsxinfra.cluster.members)) + " NSX Manager(s)")
-        print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('EdgeNode',nsxinfra.nodes))) + " Edge(s)")
-        print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len(transportnodes.getComponentbyType('HostNode',nsxinfra.nodes))) + " Host(s)")
-        nb_router = []
-        print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len([ nb_router for rtr in nsxinfra.routers if rtr.type == 'Tier0'])) + " T0 Router(s)")
-        print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len([ nb_router for rtr in nsxinfra.routers if rtr.type == 'Tier1'])) + " T1 Router(s)")
+        nb_nodes = []
+        # print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len(node.getComponentbyType('EdgeNode',nsxinfra.nodes))) + " Edge(s)")
+        # print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len(node.getComponentbyType('HostNode',nsxinfra.nodes))) + " Host(s)")
+        print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len([ nb_nodes for rtr in nsxinfra.nodes if rtr.type == 'EdgeNode'])) + " Edge(s)")
+        print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len([ nb_nodes for rtr in nsxinfra.nodes if rtr.type == 'HostNode'])) + " Host(s)")
+        print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len([ nb_nodes for rtr in nsxinfra.nodes if rtr.type == 'Tier0'])) + " T0 Router(s)")
+        print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len([ nb_nodes for rtr in nsxinfra.nodes if rtr.type == 'Tier1'])) + " T1 Router(s)")
         print(tools.color.RED + "==> " + tools.color.NORMAL + "Found " + str(len(nsxinfra.segments)) + " Segment(s)")
         return nsxinfra
     except Exception as error:

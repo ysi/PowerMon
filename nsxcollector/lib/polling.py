@@ -18,10 +18,10 @@ def collectData(infra, elementlist,inDB):
             print(tools.color.RED + "ERROR HTTP ==> " + str(code) + tools.color.NORMAL + " : error accessing to " + infra.url_api + item.call)
 
 
-def createCmdPolling(cmd, cmd_panel, node=None, interface=None):
-    if node is not None and interface is not None: 
-        values = [node.name, interface.id]
-        call = cmd.replaceIDs_call([node.id, interface.id])
+def createCmdPolling(cmd, cmd_panel, node=None, list_param=[]):
+    if len(list_param) > 0: 
+        values = list_param
+        call = cmd.replaceIDs_call(list_param)
     else: 
         call = cmd.call
         values = []
@@ -66,18 +66,24 @@ def PollingListCmds(infra):
                             for it in node['interfaces']:
                                 it_polling = find_node.findInterface(it)
                                 if it_polling is not None:
-                                    List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, find_node, it_polling))
+                                    List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, find_node, [find_node.name, it_polling.id]))
                         # Want all interfaces
                         else:
                             for it in find_node.interfaces:
-                                List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, find_node, it_polling ))
+                                List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, find_node, [find_node.name, it_polling.id] ))
 
                     # no component found in object
                     else:
                         print(tools.color.RED + "ERROR - Can't find " + node['name'] + tools.color.NORMAL + ' in discover Infra. Please check the name in your Panel YAML File.')
-            # no component precised - meaning NSX Manager
+            # no component precised - meaning NSX Manager or want all components if parameters
             else:
-                List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, infra.cluster) )
+                if len(cmd.parameters) > 0:
+                    for node in infra.nodes:
+                        if node.call_variable_id in cmd.parameters:
+                            if 'Tier' in node.type and '{localserviceid}' in cmd.parameters:
+                                List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, node, [node.id, node.localservice], ) )
 
-    for i in List_Polling_Cmds:
-        i.viewCommand()        
+                else:
+                    List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, infra.cluster) )
+
+    return List_Polling_Cmds  
