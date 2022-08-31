@@ -13,7 +13,6 @@ class node:
         self.interfaces = []
 
 
-
     def findInterface(self, name):
         for it in self.interfaces:
             if it.name == name:

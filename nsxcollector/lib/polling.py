@@ -75,12 +75,13 @@ def PollingListCmds(infra):
                     # no component found in object
                     else:
                         print(tools.color.RED + "ERROR - Can't find " + node['name'] + tools.color.NORMAL + ' in discover Infra. Please check the name in your Panel YAML File.')
+                        sys.exit()
             # no component precised - meaning NSX Manager or want all components if parameters
             else:
                 if len(cmd.parameters) > 0:
                     for node in infra.nodes:
                         if node.call_variable_id in cmd.parameters:
-                            if 'Tier' in node.type and '{localserviceid}' in cmd.parameters:
+                            if 'Tier' in node.type and '{localeserviceid}' in cmd.parameters:
                                 List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, node, [node.id, node.localservice], ) )
 
                 else:
