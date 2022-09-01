@@ -80,9 +80,13 @@ def PollingListCmds(infra):
             else:
                 if len(cmd.parameters) > 0:
                     for node in infra.nodes:
+                        # for node_param in node.parameters:
+                        #     for cmd_param in cmd.parameters:
+                        #         if node_param == cmd_param:
+                        # print(node.parameters)
                         if node.call_variable_id in cmd.parameters:
                             if 'Tier' in node.type and '{localeserviceid}' in cmd.parameters:
-                                List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, node, [node.id, node.localservice], ) )
+                                List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, node, [node.id, node.localeserviceid] ) )
 
                 else:
                     List_Polling_Cmds.append( createCmdPolling(cmd, cmd_panel, infra.cluster) )

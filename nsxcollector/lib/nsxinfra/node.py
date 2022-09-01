@@ -4,7 +4,7 @@ import logging
 
 class node:
     call_variable_id = ''
-    path = ''
+    parameters = []
     # init method or constructor
     def __init__(self, name, id, type):
         self.name = name
@@ -12,27 +12,29 @@ class node:
         self.type = type
         self.interfaces = []
 
-
     def findInterface(self, name):
         for it in self.interfaces:
             if it.name == name:
                 return it
 
+    def viewNode(self):
+        print('\nInformations about ' + self.type + ' node ' + self.name)
+        print(' - id: ' + self.id)
+        print(' - type: ' + self.type)
+        print(' - call_variable_id: ' + self.call_variable_id)
+        print(' - parameters: ' + ', '.join(self.parameters))
+        for it in self.interfaces:
+            it.viewInterface()
 
 
 class router(node):
-    localservice = ''
+    localeserviceid = ''
     ha_mode = ''
     failover_mode = ''
 
     def viewNode(self):
-        print('Informations about ' + self.type + ' node ' + self.name)
-        print(' - id: ' + self.id)
-        print(' - type: ' + self.type)
-        print(' - call_variable_id: ' + self.call_variable_id)
-        print(' - localservice: ' + self.localservice)
-        for it in self.interfaces:
-            it.viewInterface()
+        node.viewNode(self)
+        print(' - localservice: ' + self.localeserviceid)
 
 
     def getLocalService(self, infra, localservice_call):
@@ -76,14 +78,9 @@ class transportnode(node):
     ip_mgmt = ""
 
     def viewNode(self):
-        print('Informations about ' + self.type + ' node ' + self.name)
-        print(' - id: ' + self.id)
+        node.viewNode(self)
         print(' - unique_id: ' + self.node_id)
         print(' - ip_mgmt: ' + self.ip_mgmt)
-        print(' - type: ' + self.type)
-        print(' - call_variable_id: ' + self.call_variable_id)
-        for it in self.interfaces:
-            it.viewInterface()
 
     def discoverInterfaces(self, infra, url):
         """

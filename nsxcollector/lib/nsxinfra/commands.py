@@ -87,6 +87,23 @@ class Swagger:
         print(lib.tools.color.RED + "==> " + lib.tools.color.NORMAL + " Found " + str(len(self.parameters)) + " parameters")
 
 
+    def getParamfromListCmds(self, list):
+        result = []
+        for cmd in list:
+            for pr in cmd.parameters:
+                if pr not in result:
+                    result.append(pr)
+        return result
+
+
+    def getCMDsfromParam(self, param):
+        result = []
+        for cmd in self.commands:
+            for pr in cmd.parameters:
+                if param == pr:
+                    result.append(cmd)
+        return result
+
     def viewAllCommands(self):
         for cmd in self.commands:
             cmd.viewCommand()
@@ -145,6 +162,7 @@ class cmd:
         self.tags = tags
         self.parameters = []
         self.scope = ""
+        
 
     def searchIDs(self):
         # search IDs in a call

@@ -50,6 +50,7 @@ def main():
     gf.testGrafana()
     # Connect to NSX and Get Transport Nodes: Create List of Nodes and Commands
     infra = discovery.discovery(config)
+    infra.viewALLInfra()
     pollinglist = polling.PollingListCmds(infra)
     for i in pollinglist:
         i.viewCommand()

@@ -40,7 +40,7 @@ class nsx_infra:
         print(' - federation: ' + self.federation)
         print(' - enforcement: ' + self.enforcement)
         print(' - domain: ' + self.domain)
-        print(' - configpanels: ' + self.configpanels)
+        # print(' - configpanels: ' + ', '.join(self.configpanels))
         print(' - commandfile: ' + self.commandfile)
 
     def viewALLInfra(self):
@@ -133,24 +133,30 @@ class nsx_infra:
                         if typenode == 'tn': 
                             typeobj = nd['node_deployment_info']['resource_type']
                             nodeObj = node.transportnode(nd['display_name'],nd['id'],typeobj)
-                            nodeObj.node_id = nd['node_id']
+                            nodeObj.id = nd['node_id']
                             nodeObj.ip_mgmt = nd['node_deployment_info']['ip_addresses'][0]
                             nodeObj.call_variable_id = "{transportnodeid}"
+                            nodeObj.parameters = self.swagger.getParamfromListCmds(self.swagger.getCMDsfromParam(nodeObj.call_variable_id))
                             url = int_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id)
 
                         elif typenode == 't1': 
                             nodeObj = node.router(nd['display_name'],nd['id'],nd['resource_type'])
                             nodeObj.call_variable_id = '{tier1id}'
+                            nodeObj.parameters.append({'param': '{tier1id}', 'value': nodeObj.id})
+                            nodeObj.parameters = self.swagger.getParamfromListCmds(self.swagger.getCMDsfromParam(nodeObj.call_variable_id))
+
                             ls_cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls['list_' + typenode + '_localservice'], scope=self.federation)
-                            nodeObj.localservice = nodeObj.getLocalService(self, ls_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id))
-                            url = int_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id).replace('{localeserviceid}', nodeObj.localservice)
+                            nodeObj.localeserviceid = nodeObj.getLocalService(self, ls_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id))
+                            url = int_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id).replace('{localeserviceid}', nodeObj.localeserviceid)
 
                         else:
                             nodeObj = node.router(nd['display_name'],nd['id'],nd['resource_type'])
                             nodeObj.call_variable_id = '{tier0id}'
+                            nodeObj.parameters = self.swagger.getParamfromListCmds(self.swagger.getCMDsfromParam(nodeObj.call_variable_id))
+
                             ls_cmd = self.swagger.searchCommand(exact=True, name=self.discovercalls['list_' + typenode + '_localservice'], scope=self.federation)
-                            nodeObj.localservice = nodeObj.getLocalService(self, ls_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id))
-                            url = int_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id).replace('{localeserviceid}', nodeObj.localservice)
+                            nodeObj.localeserviceid = nodeObj.getLocalService(self, ls_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id))
+                            url = int_cmd.call.replace(nodeObj.call_variable_id, nodeObj.id).replace('{localeserviceid}', nodeObj.localeserviceid)
 
                         logging.info(tools.color.RED + "==> " + tools.color.NORMAL + "Found Node " + nodeObj.type + ' - ' + nd['display_name'])
                         
